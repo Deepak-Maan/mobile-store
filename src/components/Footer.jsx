@@ -33,7 +33,7 @@ export const Footer = ({ onOpenCart, onOpenAuth }) => {
           <p className="footer-desc">
             Experience the titanium era of mobile technology. Curating the world's most advanced, high-fidelity smartphones with elite AI capabilities, premium materials, and professional-grade optical cameras.
           </p>
-          <div className="social-links">
+          <div className="social-links max-lg:justify-center">
             <a href="https://twitter.com" target="_blank" rel="noopener noreferrer" title="Twitter">
               <MessageCircle width="18" height="18" />
             </a>
