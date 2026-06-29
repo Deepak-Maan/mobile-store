@@ -19,8 +19,22 @@ export const ProductCard = ({ product }) => {
 
   const isOutOfStock = product.stock === 0;
 
+  const cardRef = React.useRef(null);
+
+  const handleMouseMove = (e) => {
+    const card = cardRef.current;
+    if (!card) return;
+    const rect = card.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    card.style.setProperty('--mouse-x', `${x}px`);
+    card.style.setProperty('--mouse-y', `${y}px`);
+  };
+
   return (
     <motion.article 
+      ref={cardRef}
+      onMouseMove={handleMouseMove}
       layout
       whileHover={{ 
         y: -7, 

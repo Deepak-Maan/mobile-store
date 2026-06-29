@@ -13,6 +13,11 @@ import { AuthModal } from './components/AuthModal';
 import { ToastContainer } from './components/Toast';
 import { Footer } from './components/Footer';
 import { Faq } from './components/Faq';
+import { motion, AnimatePresence } from 'framer-motion';
+import { InteractiveBackground } from './components/InteractiveBackground';
+import { CustomCursor } from './components/CustomCursor';
+import { FeaturesSection } from './components/FeaturesSection';
+import { StatsSection } from './components/StatsSection';
 
 function App() {
   const { currentView, isAdminLoggedIn } = useStore();
@@ -39,6 +44,10 @@ function App() {
 
   return (
     <div className="app-shell" style={{ position: 'relative', minHeight: '100vh' }}>
+      {/* Global Interactive Elements */}
+      <InteractiveBackground />
+      <CustomCursor />
+
       {/* Dynamic Toast Alerts Stack */}
       <ToastContainer />
 
@@ -49,24 +58,60 @@ function App() {
       />
 
       {/* Main View Router */}
-      <main>
-        {currentView === 'storefront' && (
-          <>
-            <Hero onExplore={handleExploreClick} />
-            <Catalog />
-            <Faq />
-          </>
-        )}
+      <main style={{ position: 'relative', overflow: 'hidden' }}>
+        <AnimatePresence mode="wait">
+          {currentView === 'storefront' && (
+            <motion.div
+              key="storefront"
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -15 }}
+              transition={{ duration: 0.4, ease: 'easeOut' }}
+            >
+              <Hero onExplore={handleExploreClick} />
+              <FeaturesSection />
+              <Catalog />
+              <StatsSection />
+              <Faq />
+            </motion.div>
+          )}
 
-        {currentView === 'checkout' && (
-          <Checkout onOpenAuth={() => setIsAuthOpen(true)} />
-        )}
+          {currentView === 'checkout' && (
+            <motion.div
+              key="checkout"
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -15 }}
+              transition={{ duration: 0.4, ease: 'easeOut' }}
+            >
+              <Checkout onOpenAuth={() => setIsAuthOpen(true)} />
+            </motion.div>
+          )}
 
-        {currentView === 'success' && <OrderSuccess />}
+          {currentView === 'success' && (
+            <motion.div
+              key="success"
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -15 }}
+              transition={{ duration: 0.4, ease: 'easeOut' }}
+            >
+              <OrderSuccess />
+            </motion.div>
+          )}
 
-        {currentView === 'admin' && (
-          isAdminLoggedIn ? <AdminLayout /> : <AdminLogin />
-        )}
+          {currentView === 'admin' && (
+            <motion.div
+              key="admin"
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -15 }}
+              transition={{ duration: 0.4, ease: 'easeOut' }}
+            >
+              {isAdminLoggedIn ? <AdminLayout /> : <AdminLogin />}
+            </motion.div>
+          )}
+        </AnimatePresence>
       </main>
 
       {/* Global Modals & Sliding Drawers */}

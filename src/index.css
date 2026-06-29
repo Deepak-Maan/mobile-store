@@ -217,9 +217,9 @@ h1, h2, h3, h4, h5, h6 {
 
 /* Hero Section */
 .hero-container {
-  padding: 4.5rem 2rem; /* Taller, more cinematic hero spacing */
+  padding: 3rem 2rem 0 2rem;
   max-width: 1300px;
-  margin: 0 auto;
+  margin: 0 auto 3rem auto;
 }
 
 .hero-banner {
@@ -227,11 +227,11 @@ h1, h2, h3, h4, h5, h6 {
               linear-gradient(135deg, rgba(20, 20, 25, 0.8), rgba(10, 10, 12, 0.95));
   border: 1px solid var(--border-color);
   border-radius: var(--radius-lg);
-  padding: 6rem 5rem; /* Massive, spacious theater-like layout */
+  padding: 4rem 3.5rem;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 4rem;
+  gap: 3rem;
   position: relative;
   overflow: hidden;
   box-shadow: var(--shadow-premium);
@@ -303,9 +303,9 @@ h1, h2, h3, h4, h5, h6 {
   flex: 0.8;
   display: flex;
   justify-content: center;
-  align-items: center;
+  align-items: flex-start;
   position: relative;
-  height: 480px;
+  overflow: hidden;
   opacity: 1;
   transform: none;
 }
@@ -433,7 +433,7 @@ h1, h2, h3, h4, h5, h6 {
 /* Product Catalog Grid */
 .catalog-container {
   max-width: 1300px;
-  margin: 0 auto 5rem auto;
+  margin: 0 auto 2.5rem auto;
   padding: 0 2rem;
 }
 
@@ -2336,8 +2336,8 @@ footer {
   }
 
   .hero-visual {
-    height: 280px;
     width: 100%;
+    overflow: hidden;
   }
 
   /* Analytical Charts */
@@ -2573,7 +2573,7 @@ footer {
   }
 
   .hero-visual {
-    height: 200px;
+    overflow: hidden;
   }
 
   /* Product Modal details */
@@ -2754,7 +2754,7 @@ footer {
 /* Glassmorphic FAQ Accordion Section */
 .faq-container {
   max-width: 1300px;
-  margin: 0 auto 5rem auto;
+  margin: 2.5rem auto 3rem auto;
   padding: 0 2rem;
 }
 
@@ -3146,4 +3146,196 @@ footer {
   }
 }
 
+/* Custom Cursor & Advanced Animation Overlay Rules */
+body.hide-native-cursor,
+body.hide-native-cursor * {
+  cursor: none !important;
+}
+
+body.hide-native-cursor input[type="text"],
+body.hide-native-cursor input[type="password"],
+body.hide-native-cursor input[type="email"],
+body.hide-native-cursor textarea {
+  cursor: text !important;
+}
+
+.custom-cursor-ring {
+  background-color: transparent;
+  mix-blend-mode: difference;
+  transition: border-color 0.3s ease, border-width 0.3s ease, background-color 0.3s ease;
+}
+
+.custom-cursor-ring.hovered {
+  border-color: var(--secondary) !important;
+  background-color: rgba(236, 72, 153, 0.08) !important;
+}
+
+/* Three.js Hologram Section Styling */
+.three-hologram-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  filter: drop-shadow(0 0 25px rgba(99, 102, 241, 0.35));
+  animation: hologramFloat 6s ease-in-out infinite alternate;
+}
+
+@keyframes hologramFloat {
+  0% {
+    filter: drop-shadow(0 0 20px rgba(99, 102, 241, 0.25));
+  }
+  100% {
+    filter: drop-shadow(0 0 35px rgba(236, 72, 153, 0.45));
+  }
+}
+
+/* Premium Text Reveal Effect */
+.reveal-wrapper {
+  position: relative;
+  overflow: hidden;
+  display: inline-block;
+}
+
+.reveal-text-mask {
+  display: inline-block;
+  transform: translateY(100%);
+  animation: revealText 1.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes revealText {
+  to {
+    transform: translateY(0);
+  }
+}
+
+/* Ambient glow cards */
+.catalog-grid .product-card {
+  position: relative;
+  overflow: hidden;
+}
+
+.catalog-grid .product-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(800px circle at var(--mouse-x, 0) var(--mouse-y, 0), rgba(255, 255, 255, 0.06), transparent 40%);
+  z-index: 1;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.5s ease;
+}
+
+.catalog-grid .product-card:hover::before {
+  opacity: 1;
+}
+
+/* ==========================================================================
+   AURA PREMIUM SECTIONS CONTAINER AND GRID LAYOUTS (RESPONSIVE)
+   ========================================================================== */
+.features-container {
+  max-width: 1300px;
+  margin: 0 auto 3rem auto;
+  padding: 3rem 2rem;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.stats-container {
+  max-width: 1300px;
+  margin: 0 auto;
+  padding: 4.5rem 2rem 3rem 2rem;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+@media (max-width: 768px) {
+  .features-container {
+    padding: 2rem 1.5rem;
+    margin-bottom: 2rem;
+  }
+  .stats-container {
+    padding: 3.5rem 1.5rem 2rem 1.5rem;
+  }
+}
+
+@media (max-width: 640px) {
+  .features-container {
+    padding: 1.5rem 1rem;
+    margin-bottom: 1.5rem;
+  }
+  .stats-container {
+    padding: 3rem 1rem 1.5rem 1rem;
+  }
+}
+
+/* Features Bento Grid */
+.features-grid-layout {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.25rem;
+  width: 100%;
+}
+
+@media (min-width: 640px) {
+  .features-grid-layout {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .bento-card-wide {
+    grid-column: span 2;
+  }
+}
+
+@media (min-width: 1024px) {
+  .features-grid-layout {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  .bento-card-wide {
+    grid-column: span 1; /* fallback */
+  }
+  .bento-card-wide-lg {
+    grid-column: span 2;
+  }
+}
+
+/* Stats Counter Grid */
+.stats-grid-layout {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1.25rem;
+  width: 100%;
+}
+
+@media (min-width: 1024px) {
+  .stats-grid-layout {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+@media (max-width: 480px) {
+  .stats-grid-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Testimonials Carousel Grid */
+.testimonials-grid-layout {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.25rem;
+  width: 100%;
+}
+
+@media (min-width: 640px) {
+  .testimonials-grid-layout {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 1024px) {
+  .testimonials-grid-layout {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
 
