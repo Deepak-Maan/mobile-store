@@ -80,7 +80,6 @@ export const ProductModal = () => {
             transition={{ type: 'spring', stiffness: 350, damping: 26 }}
             className="modal-container"
             id="product-detail-modal"
-            style={{ maxWidth: '850px' }}
             onClick={(e) => e.stopPropagation()}
           >
             <button 
@@ -91,20 +90,17 @@ export const ProductModal = () => {
               <X width="18" height="18" strokeWidth={2.5} />
             </button>
             
-            <div className="modal-body" style={{ gridTemplateColumns: '1.1fr 1.2fr' }}>
+            <div className="modal-body">
               
               {/* Left Column: GSAP Interactive Image Gallery */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '1.2rem' }}>
-                <div 
-                  className="modal-visual" 
-                  style={{ position: 'relative', overflow: 'hidden', height: '310px', padding: '1rem' }}
-                >
+              <div className="modal-gallery">
+                <div className="modal-visual">
                   {/* Floating Left Arrow */}
                   <motion.button 
                     whileHover={{ scale: 1.1, backgroundColor: 'rgba(255,255,255,0.15)' }}
                     whileTap={{ scale: 0.95 }}
                     onClick={handlePrev}
-                    style={{ position: 'absolute', left: '0.8rem', top: '50%', transform: 'translateY(-50%)', background: 'rgba(0,0,0,0.5)', border: '1px solid var(--border-color)', color: '#fff', width: '36px', height: '36px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', zIndex: 10, outline: 'none' }}
+                    className="modal-nav-btn prev"
                   >
                     <ChevronLeft width="20" height="20" strokeWidth={2.5} />
                   </motion.button>
@@ -112,7 +108,7 @@ export const ProductModal = () => {
                   {/* Central Active Image Viewport */}
                   <div 
                     ref={imageViewportRef} 
-                    style={{ width: '100%', height: '100%', display: 'flex', justifyContent: 'center', alignItems: 'center' }} 
+                    className="modal-active-viewport"
                   >
                     <ProductImage src={phone.images[currentImageIndex]} alt={phone.name} />
                   </div>
@@ -122,39 +118,23 @@ export const ProductModal = () => {
                     whileHover={{ scale: 1.1, backgroundColor: 'rgba(255,255,255,0.15)' }}
                     whileTap={{ scale: 0.95 }}
                     onClick={handleNext}
-                    style={{ position: 'absolute', right: '0.8rem', top: '50%', transform: 'translateY(-50%)', background: 'rgba(0,0,0,0.5)', border: '1px solid var(--border-color)', color: '#fff', width: '36px', height: '36px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', zIndex: 10, outline: 'none' }}
+                    className="modal-nav-btn next"
                   >
                     <ChevronRight width="20" height="20" strokeWidth={2.5} />
                   </motion.button>
                 </div>
 
                 {/* Interactive Thumbnails Navigation Row */}
-                <div style={{ display: 'flex', justifyContent: 'center', gap: '0.8rem' }}>
+                <div className="modal-thumbnails">
                   {phone.images.map((imgSrc, idx) => (
                     <motion.button
                       key={idx}
                       onClick={() => setCurrentImageIndex(idx)}
                       whileHover={{ scale: 1.05, borderColor: 'rgba(255,255,255,0.3)' }}
                       whileTap={{ scale: 0.95 }}
-                      style={{ 
-                        width: '52px', 
-                        height: '68px', 
-                        backgroundColor: 'rgba(0, 0, 0, 0.3)', 
-                        border: currentImageIndex === idx ? '2px solid var(--primary)' : '1px solid var(--border-color)', 
-                        borderRadius: '8px', 
-                        padding: '0.2rem', 
-                        display: 'flex', 
-                        alignItems: 'center', 
-                        justifyContent: 'center',
-                        cursor: 'pointer',
-                        boxShadow: currentImageIndex === idx ? '0 0 10px var(--primary-glow)' : 'none',
-                        outline: 'none',
-                        transition: 'border 0.2s ease, box-shadow 0.2s ease'
-                      }}
+                      className={`modal-thumbnail-btn ${currentImageIndex === idx ? 'active' : ''}`}
                     >
-                      <div 
-                        style={{ width: '100%', height: '100%', opacity: currentImageIndex === idx ? 1 : 0.5, display: 'flex', justifyContent: 'center', alignItems: 'center', transition: 'opacity 0.2s ease' }} 
-                      >
+                      <div className="modal-thumbnail-inner">
                         <ProductImage src={imgSrc} alt={`${phone.name} view ${idx + 1}`} />
                       </div>
                     </motion.button>
