@@ -80,7 +80,7 @@ export const ProductModal = () => {
             transition={{ type: 'spring', stiffness: 350, damping: 26 }}
             className="modal-container"
             id="product-detail-modal"
-            style={{ maxWidth: '850px' }}
+            style={{ maxWidth: '1062px' }}
             onClick={(e) => e.stopPropagation()}
           >
             <button 
