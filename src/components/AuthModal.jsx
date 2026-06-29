@@ -65,7 +65,7 @@ export const AuthModal = ({ isOpen, onClose }) => {
             exit={{ scale: 0.94, y: 20, opacity: 0 }}
             transition={{ type: 'spring', stiffness: 350, damping: 26 }}
             className="form-modal-container"
-            style={{ maxWidth: '420px', padding: '2.2rem', overflow: 'hidden' }}
+            style={{ maxWidth: '600px', padding: '2.2rem', overflow: 'hidden' }}
             onClick={(e) => e.stopPropagation()}
           >
             <div className="form-modal-header" style={{ marginBottom: '1.2rem' }}>
