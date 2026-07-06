@@ -4,8 +4,8 @@
       "id": "phone-1",
       "name": "iPhone 15 Pro",
       "brand": "Apple",
-      "price": 1099,
-      "stock": 8,
+      "price": 1,
+      "stock": 7,
       "description": "Experience the ultimate titanium design, featuring the groundbreaking A17 Pro chip, a customizable Action button, and the most powerful iPhone camera system ever.",
       "specs": {
         "display": "6.1\" Super Retina XDR OLED, 120Hz",
@@ -28,7 +28,7 @@
       "id": "phone-2",
       "name": "Galaxy S24 Ultra",
       "brand": "Samsung",
-      "price": 1299,
+      "price": 109915,
       "stock": 5,
       "description": "Welcome to the era of mobile AI. With Galaxy S24 Ultra in your hands, you can unleash whole new levels of creativity, productivity and possibility, wrapped in premium Titanium.",
       "specs": {
@@ -52,7 +52,7 @@
       "id": "phone-3",
       "name": "Pixel 8 Pro",
       "brand": "Google",
-      "price": 999,
+      "price": 84915,
       "stock": 2,
       "description": "The all-pro phone engineered by Google. It has the best of Google AI, the most advanced Pixel Camera ever, and can help you get more done, even faster.",
       "specs": {
@@ -76,7 +76,7 @@
       "id": "phone-4",
       "name": "OnePlus 12",
       "brand": "OnePlus",
-      "price": 799,
+      "price": 67915,
       "stock": 12,
       "description": "Redefined flagship specs. Powered by Snapdragon 8 Gen 3, with a breathtaking 2K 120Hz ProXDR display, 4th Gen Hasselblad Camera for Mobile, and blistering 100W SUPERVOOC charging.",
       "specs": {
@@ -100,7 +100,7 @@
       "id": "phone-5",
       "name": "Xiaomi 14 Ultra",
       "brand": "Xiaomi",
-      "price": 1199,
+      "price": 101915,
       "stock": 4,
       "description": "Co-engineered with Leica. Reimagining mobile optical capabilities with a mechanical stepless variable aperture, 1-inch sensor main camera, and ultimate pro-photography styling.",
       "specs": {
@@ -124,7 +124,7 @@
       "id": "phone-6",
       "name": "iPhone 17 Pro",
       "brand": "Apple",
-      "price": 1199,
+      "price": 101915,
       "stock": 10,
       "description": "The peak of futuristic design. Featuring the A19 Pro chip, a 120Hz OLED screen, and advanced titanium frame. Interactive dark obsidian model showcased in our hero section.",
       "specs": {
@@ -148,7 +148,7 @@
       "id": "phone-7",
       "name": "Galaxy S23 Ultra",
       "brand": "Samsung",
-      "price": 1099,
+      "price": 93415,
       "stock": 6,
       "description": "A camera system that outshines the night. Boasting a 200MP sensor, a built-in S Pen, and top-tier gaming performance wrapped in an eco-friendly armor frame.",
       "specs": {
@@ -172,7 +172,7 @@
       "id": "phone-8",
       "name": "Pixel 9 Pro",
       "brand": "Google",
-      "price": 1049,
+      "price": 89165,
       "stock": 4,
       "description": "Google's most advanced Pro phone yet. Packed with next-generation Gemini AI features, a pro triple camera system, and a sleek modern design with polished metal edges.",
       "specs": {
@@ -196,7 +196,7 @@
       "id": "phone-9",
       "name": "OnePlus 11",
       "brand": "OnePlus",
-      "price": 699,
+      "price": 59415,
       "stock": 8,
       "description": "The shape of power. A flagship smartphone combining massive raw performance with a sleek, circular camera layout tuned by Hasselblad, and ultra-fast charging capability.",
       "specs": {
@@ -220,7 +220,7 @@
       "id": "phone-10",
       "name": "Xiaomi 13 Ultra",
       "brand": "Xiaomi",
-      "price": 899,
+      "price": 76415,
       "stock": 3,
       "description": "The professional photographer's dream. Co-engineered with Leica, this device brings professional optics to your pocket with a large 1-inch main sensor and a quad camera array.",
       "specs": {
@@ -250,5 +250,36 @@
       "isActive": true
     }
   ],
-  "orders": []
+  "orders": [
+    {
+      "id": "ORD-644395",
+      "customerName": "deepak Maan",
+      "email": "deepakmaan525@gmail.com",
+      "phone": "7496850133",
+      "address": "fgdsfgsdfr, hisar, 125052",
+      "items": [
+        {
+          "id": "phone-1",
+          "name": "iPhone 15 Pro",
+          "brand": "Apple",
+          "price": 1,
+          "quantity": 1
+        }
+      ],
+      "total": 1,
+      "date": "Jul 6, 2026",
+      "status": "shipped",
+      "userEmail": "deepakmaan525@gmail.com",
+      "paymentMethod": "upi",
+      "utrNumber": "655349702265",
+      "trackingUpdates": [
+        {
+          "timestamp": "2026-07-06T10:59:08.271Z",
+          "location": "rtret",
+          "note": "ertre",
+          "status": "shipped"
+        }
+      ]
+    }
+  ]
 }

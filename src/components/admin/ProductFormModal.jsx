@@ -115,7 +115,11 @@ export const ProductFormModal = ({ isOpen, productId, onClose }) => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    saveProduct(form);
+    const productToSave = {
+      ...form,
+      price: parseInt(form.price) || 0
+    };
+    saveProduct(productToSave);
     onClose();
   };
 
@@ -340,7 +344,7 @@ export const ProductFormModal = ({ isOpen, productId, onClose }) => {
 
               <div className="form-group-row">
                 <div className="form-group">
-                  <label htmlFor="form-product-price">Retail Price ($)</label>
+                  <label htmlFor="form-product-price">Retail Price (₹)</label>
                   <input
                     type="number"
                     id="form-product-price"
@@ -348,7 +352,7 @@ export const ProductFormModal = ({ isOpen, productId, onClose }) => {
                     onChange={handleInputChange}
                     required
                     min="1"
-                    placeholder="999"
+                    placeholder="85000"
                   />
                 </div>
                 <div className="form-group">

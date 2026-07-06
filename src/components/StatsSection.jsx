@@ -185,7 +185,7 @@ export const StatsSection = () => {
         </div>
 
         {/* ── Stat Cards ── */}
-        <div className="stats-row stats-grid-layout mb-20">
+        <div className="stats-row stats-grid-layout" style={{ marginBottom: '4.5rem' }}>
           <StatCard icon="📦" target={12000} suffix="+" label="Orders Shipped"    color="#6366f1" />
           <StatCard icon="⭐" target={49}    suffix="/5"  label="Avg. Rating (×10)"  color="#f59e0b" />
           <StatCard icon="🌍" target={52}    suffix="+"  label="Countries Served"  color="#14c887" />
@@ -194,12 +194,16 @@ export const StatsSection = () => {
 
         {/* ── Testimonials ── */}
         <div className="testimonial-section">
-          <h3 className="text-center text-2xl sm:text-3xl font-bold mb-8"
-            style={{
-              fontFamily: 'var(--font-display)',
-              background: 'linear-gradient(135deg,#fff,rgba(255,255,255,0.6))',
-              WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
-            }}>
+          <h3 style={{
+            fontFamily: 'var(--font-display)',
+            fontSize: 'clamp(1.5rem, 3vw, 2rem)',
+            fontWeight: 700,
+            textAlign: 'center',
+            marginBottom: '2.5rem',
+            background: 'linear-gradient(135deg,#fff,rgba(255,255,255,0.6))',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent'
+          }}>
             What Our Customers Say
           </h3>
 
@@ -210,14 +214,14 @@ export const StatsSection = () => {
                 <div
                   key={i}
                   onClick={() => setActiveIdx(i)}
-                  className="cursor-pointer"
+                  className={`cursor-pointer testimonial-card ${isActive ? 'active-card' : ''}`}
                   style={{
                     background: isActive
                       ? 'linear-gradient(135deg,rgba(99,102,241,0.20) 0%,rgba(15,15,25,0.75) 80%)'
                       : 'rgba(15,15,25,0.55)',
                     border: `1px solid ${isActive ? 'rgba(99,102,241,0.45)' : 'rgba(255,255,255,0.07)'}`,
                     borderRadius: 20,
-                    padding: '1.25rem',
+                    padding: '1.5rem 1.25rem',
                     backdropFilter: 'blur(14px)',
                     transform: isActive ? 'translateY(-6px) scale(1.02)' : 'translateY(0) scale(1)',
                     boxShadow: isActive ? '0 16px 40px rgba(99,102,241,0.25)' : 'none',
@@ -266,7 +270,7 @@ export const StatsSection = () => {
           </div>
 
           {/* Dot indicators */}
-          <div className="flex justify-center gap-2 mt-6">
+          <div style={{ display: 'flex', justifyContent: 'center', gap: '8px', marginTop: '2.5rem' }}>
             {TESTIMONIALS.map((_, i) => (
               <button
                 key={i}

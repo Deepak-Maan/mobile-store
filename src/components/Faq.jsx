@@ -11,7 +11,7 @@ export const Faq = () => {
     },
     {
       question: "Do you offer free shipping and returns?",
-      answer: "Yes, we offer complimentary express shipping on all orders over $500. Standard shipping takes 2-4 business days. We also provide a 30-day hassle-free return policy with pre-paid return shipping labels."
+      answer: "Yes, we offer complimentary express shipping on all orders over ₹42,500. Standard shipping takes 2-4 business days. We also provide a 30-day hassle-free return policy with pre-paid return shipping labels."
     },
     {
       question: "How does the warranty work?",

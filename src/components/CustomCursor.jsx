@@ -8,46 +8,31 @@ export const CustomCursor = () => {
   const [isHovered, setIsHovered] = useState(false);
   const [isClicked, setIsClicked] = useState(false);
 
-  const mouseCoordsRef = useRef({ x: 0, y: 0 });
-  const ringCoordsRef = useRef({ x: 0, y: 0 });
+  const mouseCoords = useRef({ x: 0, y: 0 });
+  const ringCoords = useRef({ x: 0, y: 0 });
 
   useEffect(() => {
-    // Hide custom cursor on touch/mobile devices
     const isMobile = window.matchMedia('(pointer: coarse)').matches;
     if (isMobile) return;
 
-    // Show cursor on first mouse move
     const handleMouseMove = (e) => {
-      mouseCoordsRef.current.x = e.clientX;
-      mouseCoordsRef.current.y = e.clientY;
+      mouseCoords.current.x = e.clientX;
+      mouseCoords.current.y = e.clientY;
       if (!isVisible) setIsVisible(true);
     };
 
-    const handleMouseLeaveWindow = () => {
-      setIsVisible(false);
-    };
+    const handleMouseLeaveWindow = () => setIsVisible(false);
+    const handleMouseEnterWindow = () => setIsVisible(true);
+    const handleMouseDown = () => setIsClicked(true);
+    const handleMouseUp = () => setIsClicked(false);
 
-    const handleMouseEnterWindow = () => {
-      setIsVisible(true);
-    };
-
-    const handleMouseDown = () => {
-      setIsClicked(true);
-    };
-
-    const handleMouseUp = () => {
-      setIsClicked(false);
-    };
-
-    // Global Hover Delegation
     const handleMouseOver = (e) => {
       const target = e.target;
       if (!target) return;
-
+      
       const isClickable = target.closest(
-        'a, button, select, input, textarea, [role="button"], .product-card, .faq-item, .modal-thumbnail-btn, .filter-btn, .sort-select'
+        'a, button, select, input, textarea, [role="button"], .product-card, .faq-item, .modal-thumbnail-btn, .filter-btn, .sort-select, .bento-card, .stat-card, .testimonial-card'
       );
-
       setIsHovered(!!isClickable);
     };
 
@@ -58,13 +43,13 @@ export const CustomCursor = () => {
     window.addEventListener('mouseup', handleMouseUp);
     window.addEventListener('mouseover', handleMouseOver);
 
-    // Render loop for physics-based cursor lag (lerp)
+    // Simple smooth physics lag (lerp) loop
     let animFrame;
     const updateCursor = () => {
-      const targetX = mouseCoordsRef.current.x;
-      const targetY = mouseCoordsRef.current.y;
+      const targetX = mouseCoords.current.x;
+      const targetY = mouseCoords.current.y;
 
-      // Position inner dot instantly
+      // Inner dot follows mouse instantly
       if (dotRef.current) {
         gsap.set(dotRef.current, {
           x: targetX,
@@ -73,15 +58,15 @@ export const CustomCursor = () => {
         });
       }
 
-      // Position outer ring with smooth interpolation (lerp)
+      // Outer ring lags behind with simple lerp
       if (ringRef.current) {
-        const lerpFactor = 0.16; // lag weight
-        ringCoordsRef.current.x += (targetX - ringCoordsRef.current.x) * lerpFactor;
-        ringCoordsRef.current.y += (targetY - ringCoordsRef.current.y) * lerpFactor;
+        const lerpFactor = 0.15;
+        ringCoords.current.x += (targetX - ringCoords.current.x) * lerpFactor;
+        ringCoords.current.y += (targetY - ringCoords.current.y) * lerpFactor;
 
         gsap.set(ringRef.current, {
-          x: ringCoordsRef.current.x,
-          y: ringCoordsRef.current.y,
+          x: ringCoords.current.x,
+          y: ringCoords.current.y,
           overwrite: 'auto'
         });
       }
@@ -90,7 +75,6 @@ export const CustomCursor = () => {
     };
     animFrame = requestAnimationFrame(updateCursor);
 
-    // Apply cursor: none globally
     document.body.classList.add('hide-native-cursor');
 
     return () => {
@@ -105,24 +89,24 @@ export const CustomCursor = () => {
     };
   }, [isVisible]);
 
-  // Adjust cursor scale on state changes
+  // Adjust cursor scale on state changes (hover, click)
   useEffect(() => {
-    if (!isVisible) return;
+    if (!isVisible || !ringRef.current || !dotRef.current) return;
 
     let ringScale = 1;
-    let ringOpacity = 0.7;
+    let ringOpacity = 0.75;
     let dotScale = 1;
 
     if (isHovered) {
-      ringScale = 1.8;
-      ringOpacity = 0.35;
-      dotScale = 0.5;
+      ringScale = 1.5;
+      ringOpacity = 0.45;
+      dotScale = 0.6;
     }
 
     if (isClicked) {
-      ringScale = 0.9;
+      ringScale = 0.8;
+      ringOpacity = 0.95;
       dotScale = 1.3;
-      ringOpacity = 0.9;
     }
 
     gsap.to(ringRef.current, {
@@ -144,44 +128,54 @@ export const CustomCursor = () => {
   if (window.matchMedia('(pointer: coarse)').matches) return null;
 
   return (
-    <div
-      style={{
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        pointerEvents: 'none',
-        zIndex: 99999,
-        opacity: isVisible ? 1 : 0,
-        transition: 'opacity 0.3s ease'
-      }}
-    >
-      {/* Lagging Ring */}
+    <>
+      {/* continuous subtle spinning animation for the outer ring notch */}
+      <style>{`
+        @keyframes cursorSpin {
+          from { transform: translate(-50%, -50%) rotate(0deg); }
+          to   { transform: translate(-50%, -50%) rotate(360deg); }
+        }
+        .simple-cursor-ring {
+          position: absolute;
+          width: 26px;
+          height: 26px;
+          border-radius: 50%;
+          /* Ring is solid with a distinct primary-colored top segment (notch) */
+          border: 1.5px solid rgba(255, 255, 255, 0.12);
+          border-top-color: var(--primary);
+          animation: cursorSpin 2.8s linear infinite;
+          box-shadow: 0 0 8px rgba(99, 102, 241, 0.15);
+          will-change: transform;
+        }
+        .simple-cursor-dot {
+          position: absolute;
+          width: 6px;
+          height: 6px;
+          border-radius: 50%;
+          background-color: var(--secondary);
+          transform: translate(-50%, -50%);
+          box-shadow: 0 0 6px var(--primary-glow);
+          will-change: transform;
+        }
+      `}</style>
+
       <div
-        ref={ringRef}
-        className={`custom-cursor-ring ${isHovered ? 'hovered' : ''}`}
         style={{
-          position: 'absolute',
-          width: '32px',
-          height: '32px',
-          borderRadius: '50%',
-          border: '1.5px solid var(--primary)',
-          transform: 'translate(-50%, -50%)',
-          boxShadow: '0 0 10px rgba(99, 102, 241, 0.25)'
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          pointerEvents: 'none',
+          zIndex: 99999,
+          opacity: isVisible ? 1 : 0,
+          transition: 'opacity 0.25s ease'
         }}
-      />
-      {/* Precise Dot */}
-      <div
-        ref={dotRef}
-        style={{
-          position: 'absolute',
-          width: '6px',
-          height: '6px',
-          borderRadius: '50%',
-          backgroundColor: isHovered ? 'var(--secondary)' : 'var(--primary)',
-          transform: 'translate(-50%, -50%)',
-          boxShadow: '0 0 6px var(--primary-glow)'
-        }}
-      />
-    </div>
+      >
+        {/* Lagging Ring with spinning border notch */}
+        <div ref={ringRef} className="simple-cursor-ring" />
+        
+        {/* Precise Core Dot */}
+        <div ref={dotRef} className="simple-cursor-dot" />
+      </div>
+    </>
   );
 };

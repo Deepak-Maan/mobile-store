@@ -1,7 +1,8 @@
 import React from 'react';
 import { useStore } from '../../context/StoreContext';
 import { motion } from 'framer-motion';
-import { DollarSign, ShoppingCart, Smartphone, AlertCircle } from 'lucide-react';
+import { IndianRupee, ShoppingCart, Smartphone, AlertCircle } from 'lucide-react';
+import { formatINR } from '../../utils/currency';
 
 export const DashboardTab = () => {
   const { products, orders } = useStore();
@@ -12,6 +13,7 @@ export const DashboardTab = () => {
   const totalOrdersCount = orders.length;
   const uniqueDevicesCount = products.length;
   const lowStockAlertsCount = products.filter((p) => p.stock < 5).length;
+
 
   // 2. Animate Monthly Sales Bar Chart
   // Jun is representing "live" simulation from the website orders placed in the current session
@@ -46,15 +48,16 @@ export const DashboardTab = () => {
       <div className="stats-grid">
         <div className="stat-card" id="stat-total-revenue">
           <div className="stat-icon-box green">
-            <DollarSign width="24" height="24" />
+            <IndianRupee width="24" height="24" />
           </div>
           <div className="stat-info">
             <span className="stat-label">Total Revenue</span>
             <span className="stat-value" id="stat-val-revenue">
-              ${totalRevenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              {formatINR(totalRevenue)}
             </span>
           </div>
         </div>
+
         
         <div className="stat-card" id="stat-total-orders">
           <div className="stat-icon-box blue">
@@ -101,7 +104,7 @@ export const DashboardTab = () => {
             <div className="chart-column">
               <div className="chart-bar-container">
                 <div className="chart-bar" style={{ height: '40%' }}>
-                  <span className="chart-bar-value" style={{ opacity: 1 }}>$1.2K</span>
+                  <span className="chart-bar-value" style={{ opacity: 1 }}>₹102K</span>
                 </div>
               </div>
               <span className="chart-label">Feb</span>
@@ -109,7 +112,7 @@ export const DashboardTab = () => {
             <div className="chart-column">
               <div className="chart-bar-container">
                 <div className="chart-bar" style={{ height: '65%' }}>
-                  <span className="chart-bar-value" style={{ opacity: 1 }}>$3.8K</span>
+                  <span className="chart-bar-value" style={{ opacity: 1 }}>₹323K</span>
                 </div>
               </div>
               <span className="chart-label">Mar</span>
@@ -117,7 +120,7 @@ export const DashboardTab = () => {
             <div className="chart-column">
               <div className="chart-bar-container">
                 <div className="chart-bar" style={{ height: '55%' }}>
-                  <span className="chart-bar-value" style={{ opacity: 1 }}>$2.9K</span>
+                  <span className="chart-bar-value" style={{ opacity: 1 }}>₹247K</span>
                 </div>
               </div>
               <span className="chart-label">Apr</span>
@@ -125,7 +128,7 @@ export const DashboardTab = () => {
             <div className="chart-column">
               <div className="chart-bar-container">
                 <div className="chart-bar" style={{ height: '85%' }}>
-                  <span className="chart-bar-value" style={{ opacity: 1 }}>$5.4K</span>
+                  <span className="chart-bar-value" style={{ opacity: 1 }}>₹459K</span>
                 </div>
               </div>
               <span className="chart-label">May</span>
@@ -142,12 +145,13 @@ export const DashboardTab = () => {
                   id="current-month-bar"
                 >
                   <span className="chart-bar-value" id="current-month-val" style={{ opacity: 1 }}>
-                    ${(totalRevenue / 1000).toFixed(1)}K
+                    ₹{Math.round(totalRevenue / 1000)}K
                   </span>
                 </motion.div>
               </div>
               <span className="chart-label">Jun (Now)</span>
             </div>
+
           </div>
         </div>
 

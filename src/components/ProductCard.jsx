@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { useStore } from '../context/StoreContext';
 import { Eye, Plus } from 'lucide-react';
 import { ProductImage } from './ProductImage';
+import { formatINR } from '../utils/currency';
 
 export const ProductCard = ({ product }) => {
   const { addToCart, setSelectedProductId } = useStore();
@@ -60,7 +61,7 @@ export const ProductCard = ({ product }) => {
       <p className="card-desc">{product.description}</p>
       
       <div className="card-footer">
-        <span className="card-price">${product.price.toLocaleString()}</span>
+        <span className="card-price">{formatINR(product.price)}</span>
         
         <div className="card-actions">
           <button 

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useStore } from '../context/StoreContext';
 import { User, CreditCard, Check, LogIn } from 'lucide-react';
+import { formatINR, toINR } from '../utils/currency';
 
 export const Checkout = ({ onOpenAuth }) => {
   const { cart, products, processOrder, currentUser, addToast } = useStore();
@@ -53,7 +54,7 @@ export const Checkout = ({ onOpenAuth }) => {
   };
 
   const triggerUpiApp = (appName) => {
-    const totalInINR = Math.round(subtotal * 85);
+    const totalInINR = subtotal;
     const upiUrl = `upi://pay?pa=princejaat07@fam&pn=MobileStore&am=${totalInINR}&cu=INR&tn=Order%20Payment`;
     
     // Simple user agent check to see if we are on a mobile device
@@ -290,7 +291,7 @@ export const Checkout = ({ onOpenAuth }) => {
                       boxShadow: '0 0 20px rgba(99, 102, 241, 0.1)'
                     }}>
                       <img 
-                        src={`https://api.qrserver.com/v1/create-qr-code/?size=160x160&color=6366f1&bgcolor=15151e&data=${encodeURIComponent(`upi://pay?pa=princejaat07@fam&pn=MobileStore&am=${Math.round(subtotal * 85)}&cu=INR&tn=Order%20Payment`)}`}
+                        src={`https://api.qrserver.com/v1/create-qr-code/?size=160x160&color=6366f1&bgcolor=15151e&data=${encodeURIComponent(`upi://pay?pa=princejaat07@fam&pn=MobileStore&am=${Math.round(subtotal)}&cu=INR&tn=Order%20Payment`)}`}
                         alt="UPI Payment QR Code"
                         className="upi-qr-image"
                       />
@@ -311,7 +312,7 @@ export const Checkout = ({ onOpenAuth }) => {
                   <div className="upi-detail-row bordered">
                     <span className="upi-detail-label">Amount in INR (₹):</span>
                     <strong className="upi-amount-value">
-                      ₹{Math.round(subtotal * 85).toLocaleString()}
+                      ₹{Math.round(subtotal).toLocaleString('en-IN')}
                     </strong>
                   </div>
                   
@@ -402,14 +403,14 @@ export const Checkout = ({ onOpenAuth }) => {
                 return (
                   <div className="checkout-summary-item" key={item.productId} style={{ borderBottom: '1px solid rgba(255,255,255,0.03)' }}>
                     <span>{phone.name} <strong>x{item.quantity}</strong></span>
-                    <span>${itemTotal.toLocaleString()}</span>
+                    <span>{formatINR(itemTotal)}</span>
                   </div>
                 );
               })}
             </div>
             <div className="checkout-summary-item">
               <span>Subtotal</span>
-              <span id="checkout-subtotal">${subtotal.toLocaleString()}</span>
+              <span id="checkout-subtotal">{formatINR(subtotal)}</span>
             </div>
             <div className="checkout-summary-item">
               <span>Shipping</span>
@@ -417,7 +418,7 @@ export const Checkout = ({ onOpenAuth }) => {
             </div>
             <div className="checkout-summary-item total-row">
               <span>Total to pay</span>
-              <span id="checkout-total">${subtotal.toLocaleString()}</span>
+              <span id="checkout-total">{formatINR(subtotal)}</span>
             </div>
           </div>
         </div>

@@ -3,6 +3,8 @@ import { useStore } from '../../context/StoreContext';
 import { Plus, Edit, Trash2 } from 'lucide-react';
 import { ProductFormModal } from './ProductFormModal';
 import { ProductImage } from '../ProductImage';
+import { formatINR } from '../../utils/currency';
+
 
 export const InventoryTab = () => {
   const { products, deleteProduct } = useStore();
@@ -87,8 +89,9 @@ export const InventoryTab = () => {
                       </div>
                     </td>
                     <td>
-                      <strong>${phone.price.toLocaleString()}</strong>
+                      <strong>{formatINR(phone.price)}</strong>
                     </td>
+
                     <td>
                       <div className={`stock-indicator ${stockClass}`}>
                         <span className="stock-dot"></span>

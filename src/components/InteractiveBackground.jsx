@@ -1,177 +1,185 @@
 import React, { useEffect, useRef } from 'react';
+import * as THREE from 'three';
 
 export const InteractiveBackground = () => {
-  const canvasRef = useRef(null);
-  const mouseRef = useRef({ x: null, y: null, radius: 180 });
+  const containerRef = useRef(null);
+  const mouseRef = useRef({ x: 0, y: 0, targetX: 0, targetY: 0 });
 
   useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
+    const container = containerRef.current;
+    if (!container) return;
 
-    const ctx = canvas.getContext('2d');
-    let animationFrameId;
-    let particles = [];
-    const particleCount = 45;
+    // ── Scene Setup ──
+    const scene = new THREE.Scene();
+    
+    // Add dark cinematic fog
+    scene.fog = new THREE.FogExp2(0x0a0a0c, 0.0012);
 
-    // Handle resizing
-    const resizeCanvas = () => {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
+    const camera = new THREE.PerspectiveCamera(
+      60,
+      window.innerWidth / window.innerHeight,
+      1,
+      10000
+    );
+    camera.position.set(0, 350, 1000);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setClearColor(0x060608, 1);
+    container.appendChild(renderer.domElement);
+
+    // ── Generate Circular Glowing Point Texture ──
+    const generatePointTexture = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = 16;
+      canvas.height = 16;
+      const ctx = canvas.getContext('2d');
+      const grad = ctx.createRadialGradient(8, 8, 0, 8, 8, 8);
+      grad.addColorStop(0, 'rgba(255, 255, 255, 1)');
+      grad.addColorStop(0.3, 'rgba(255, 255, 255, 0.8)');
+      grad.addColorStop(1, 'rgba(255, 255, 255, 0)');
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, 16, 16);
+      return new THREE.CanvasTexture(canvas);
     };
-    resizeCanvas();
-    window.addEventListener('resize', resizeCanvas);
 
-    // Track mouse
-    const handleMouseMove = (e) => {
-      mouseRef.current.x = e.clientX;
-      mouseRef.current.y = e.clientY;
-    };
+    const pointTexture = generatePointTexture();
 
-    const handleMouseLeave = () => {
-      mouseRef.current.x = null;
-      mouseRef.current.y = null;
-    };
+    // ── Grid Setup (3D Cinematic Wave) ──
+    const amountX = 65;
+    const amountY = 45;
+    const numParticles = amountX * amountY;
+    const spacing = 45;
 
-    window.addEventListener('mousemove', handleMouseMove);
-    document.addEventListener('mouseleave', handleMouseLeave);
+    const positions = new Float32Array(numParticles * 3);
+    const colors = new Float32Array(numParticles * 3);
 
-    // Particle Class
-    class Particle {
-      constructor() {
-        this.x = Math.random() * canvas.width;
-        this.y = Math.random() * canvas.height;
-        this.size = Math.random() * 2 + 1;
-        this.baseX = this.x;
-        this.baseY = this.y;
-        this.density = Math.random() * 15 + 10;
+    const colorPrimary = new THREE.Color('#6366f1'); // Indigo
+    const colorSecondary = new THREE.Color('#ec4899'); // Pink
+    const tempColor = new THREE.Color();
+
+    let i = 0;
+    for (let ix = 0; ix < amountX; ix++) {
+      for (let iy = 0; iy < amountY; iy++) {
+        // Center the grid around origin
+        const x = (ix - amountX / 2) * spacing;
+        const z = (iy - amountY / 2) * spacing;
         
-        // Slow float speeds
-        this.vx = (Math.random() - 0.5) * 0.4;
-        this.vy = (Math.random() - 0.5) * 0.4;
-        this.color = Math.random() > 0.5 ? 'rgba(99, 102, 241, 0.4)' : 'rgba(236, 72, 153, 0.4)';
-      }
+        positions[i] = x;
+        positions[i + 1] = 0; // modulated in render loop
+        positions[i + 2] = z;
 
-      update() {
-        // Natural float
-        this.x += this.vx;
-        this.y += this.vy;
+        // Gradient blend based on position
+        const t = ix / amountX;
+        tempColor.copy(colorPrimary).lerp(colorSecondary, t);
+        
+        colors[i] = tempColor.r;
+        colors[i + 1] = tempColor.g;
+        colors[i + 2] = tempColor.b;
 
-        // Bounce off canvas boundaries
-        if (this.x < 0 || this.x > canvas.width) this.vx = -this.vx;
-        if (this.y < 0 || this.y > canvas.height) this.vy = -this.vy;
-
-        // Mouse attraction/repulsion interaction
-        const mouseX = mouseRef.current.x;
-        const mouseY = mouseRef.current.y;
-
-        if (mouseX !== null && mouseY !== null) {
-          const dx = mouseX - this.x;
-          const dy = mouseY - this.y;
-          const distance = Math.hypot(dx, dy);
-          const forceRadius = mouseRef.current.radius;
-
-          if (distance < forceRadius) {
-            // Pull particles slightly towards the mouse
-            const force = (forceRadius - distance) / forceRadius;
-            const directionX = (dx / distance) * force * 0.95;
-            const directionY = (dy / distance) * force * 0.95;
-            this.x += directionX;
-            this.y += directionY;
-          }
-        }
-      }
-
-      draw() {
-        ctx.beginPath();
-        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-        ctx.fillStyle = this.color;
-        ctx.fill();
+        i += 3;
       }
     }
 
-    // Initialize particles
-    const init = () => {
-      particles = [];
-      for (let i = 0; i < particleCount; i++) {
-        particles.push(new Particle());
-      }
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+
+    const material = new THREE.PointsMaterial({
+      size: 4.5,
+      map: pointTexture,
+      vertexColors: true,
+      transparent: true,
+      opacity: 0.6,
+      depthWrite: false,
+      blending: THREE.AdditiveBlending,
+    });
+
+    const points = new THREE.Points(geometry, material);
+    scene.add(points);
+
+    // ── Mouse & Parallax tracking ──
+    const onMouseMove = (e) => {
+      mouseRef.current.targetX = (e.clientX - window.innerWidth / 2) * 0.45;
+      mouseRef.current.targetY = (e.clientY - window.innerHeight / 2) * 0.35;
     };
-    init();
+    window.addEventListener('mousemove', onMouseMove);
 
-    // Render loop
+    // ── Resize handler ──
+    const onWindowResize = () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    };
+    window.addEventListener('resize', onWindowResize);
+
+    // ── Animation Loop ──
+    let count = 0;
+    let animFrame;
+
     const animate = () => {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      animFrame = requestAnimationFrame(animate);
 
-      // Update & Draw particles
-      particles.forEach((p) => {
-        p.update();
-        p.draw();
-      });
+      count += 0.015;
 
-      // Connect particles with thin neon lines
-      for (let a = 0; a < particles.length; a++) {
-        for (let b = a + 1; b < particles.length; b++) {
-          const dx = particles[a].x - particles[b].x;
-          const dy = particles[a].y - particles[b].y;
-          const distance = Math.hypot(dx, dy);
+      // Modulate particle heights (Y positions) using undulating sine waves
+      const posAttr = points.geometry.attributes.position;
+      let idx = 0;
 
-          if (distance < 140) {
-            const alpha = (140 - distance) / 140 * 0.12;
-            ctx.strokeStyle = `rgba(99, 102, 241, ${alpha})`;
-            ctx.lineWidth = 0.75;
-            ctx.beginPath();
-            ctx.moveTo(particles[a].x, particles[a].y);
-            ctx.lineTo(particles[b].x, particles[b].y);
-            ctx.stroke();
-          }
+      for (let ix = 0; ix < amountX; ix++) {
+        for (let iy = 0; iy < amountY; iy++) {
+          // Complex undulating wave calculation
+          const y =
+            Math.sin((ix + count) * 0.25) * 45 +
+            Math.sin((iy + count) * 0.35) * 45 +
+            Math.cos((ix + iy + count) * 0.15) * 30;
+
+          posAttr.array[idx + 1] = y;
+          idx += 3;
         }
       }
+      posAttr.needsUpdate = true;
 
-      // Draw active magnetic links to mouse pointer
-      const mouseX = mouseRef.current.x;
-      const mouseY = mouseRef.current.y;
-      if (mouseX !== null && mouseY !== null) {
-        particles.forEach((p) => {
-          const dx = p.x - mouseX;
-          const dy = p.y - mouseY;
-          const distance = Math.hypot(dx, dy);
+      // Smooth camera interpolation for cinematic lag
+      mouseRef.current.x += (mouseRef.current.targetX - mouseRef.current.x) * 0.05;
+      mouseRef.current.y += (mouseRef.current.targetY - mouseRef.current.y) * 0.05;
 
-          if (distance < 160) {
-            const alpha = (160 - distance) / 160 * 0.15;
-            ctx.strokeStyle = `rgba(236, 72, 153, ${alpha})`;
-            ctx.lineWidth = 0.5;
-            ctx.beginPath();
-            ctx.moveTo(p.x, p.y);
-            ctx.lineTo(mouseX, mouseY);
-            ctx.stroke();
-          }
-        });
-      }
+      // position camera relative to mouse and time
+      camera.position.x = mouseRef.current.x;
+      camera.position.y = 350 + Math.sin(count * 0.15) * 40 - mouseRef.current.y * 0.5;
+      camera.lookAt(new THREE.Vector3(0, -50, 0));
 
-      animationFrameId = requestAnimationFrame(animate);
+      renderer.render(scene, camera);
     };
+
     animate();
 
+    // ── Cleanup ──
     return () => {
-      window.removeEventListener('resize', resizeCanvas);
-      window.removeEventListener('mousemove', handleMouseMove);
-      document.removeEventListener('mouseleave', handleMouseLeave);
-      cancelAnimationFrame(animationFrameId);
+      window.removeEventListener('mousemove', onMouseMove);
+      window.removeEventListener('resize', onWindowResize);
+      cancelAnimationFrame(animFrame);
+      renderer.dispose();
+      geometry.dispose();
+      material.dispose();
+      pointTexture.dispose();
+      if (container.contains(renderer.domElement)) {
+        container.removeChild(renderer.domElement);
+      }
     };
   }, []);
 
   return (
-    <canvas
-      ref={canvasRef}
+    <div
+      ref={containerRef}
       style={{
         position: 'fixed',
-        top: 0,
-        left: 0,
-        width: '100vw',
-        height: '100vh',
-        zIndex: -1,
+        inset: 0,
+        zIndex: -2,
         pointerEvents: 'none',
-        background: 'transparent'
+        overflow: 'hidden',
+        background: '#060608',
       }}
     />
   );

@@ -1,7 +1,7 @@
 import React from 'react';
 import { useStore } from '../context/StoreContext';
 import { motion } from 'framer-motion';
-import { Smartphone, ShoppingBag, ShoppingCart, LogIn, LogOut, User, Shield } from 'lucide-react';
+import { Smartphone, ShoppingBag, ShoppingCart, LogIn, LogOut, User, Shield, Truck } from 'lucide-react';
 
 export const Navbar = ({ onOpenCart, onOpenAuth }) => {
   const { currentView, switchView, cart, currentUser, logoutUser, isAdminLoggedIn } = useStore();
@@ -36,6 +36,26 @@ export const Navbar = ({ onOpenCart, onOpenAuth }) => {
                 <ShoppingBag width="18" height="18" />
                 <span className="nav-btn-text">Shop</span>
               </button>
+
+              <button 
+                className={`nav-btn ${currentView === 'tracking' ? 'active' : ''}`} 
+                id="nav-tracking-btn" 
+                onClick={() => switchView('tracking')}
+              >
+                <Truck width="18" height="18" />
+                <span className="nav-btn-text">Track Order</span>
+              </button>
+              
+              {currentUser && (
+                <button 
+                  className={`nav-btn ${currentView === 'history' ? 'active' : ''}`} 
+                  id="nav-history-btn" 
+                  onClick={() => switchView('history')}
+                >
+                  <ShoppingBag width="18" height="18" style={{ color: 'var(--primary)' }} />
+                  <span className="nav-btn-text">My Orders</span>
+                </button>
+              )}
               
               <div className="cart-icon-wrapper">
                 <button 

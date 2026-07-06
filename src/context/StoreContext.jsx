@@ -20,6 +20,7 @@ export const StoreProvider = ({ children }) => {
   const [currentView, setCurrentView] = useState('storefront');
   const [adminPanel, setAdminPanel] = useState('dashboard');
   const [selectedProductId, setSelectedProductId] = useState(null);
+  const [trackingOrderId, setTrackingOrderId] = useState('');
   
   // Filtering state
   const [brandFilter, setBrandFilter] = useState('All');
@@ -64,11 +65,14 @@ export const StoreProvider = ({ children }) => {
       if (res.ok) {
         const data = await res.json();
         setOrders(data);
+        return data;
       } else {
         console.error('Failed to load orders from server');
+        return [];
       }
     } catch (err) {
       console.error('Failed to connect to server for orders:', err);
+      return [];
     }
   };
 
@@ -492,6 +496,55 @@ export const StoreProvider = ({ children }) => {
     }
   };
 
+  // --- ADMINISTRATOR TRACKING UPDATES ---
+  const addTrackingUpdate = async (orderId, location, note, status) => {
+    try {
+      const res = await fetch(`${API_BASE}/orders/${orderId}/tracking`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ location, note, status })
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        addToast(data.error || 'Failed to add tracking update.', 'error');
+        return false;
+      }
+
+      await fetchProducts();
+      await fetchOrders();
+      addToast(`Tracking update added to ${orderId}.`, 'success');
+      return true;
+    } catch (err) {
+      addToast('Server connection error while adding tracking update.', 'error');
+      return false;
+    }
+  };
+
+  const cancelOrderWithReason = async (orderId, reason) => {
+    try {
+      const res = await fetch(`${API_BASE}/orders/${orderId}/cancel`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reason })
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        addToast(data.error || 'Failed to cancel order.', 'error');
+        return false;
+      }
+
+      await fetchProducts();
+      await fetchOrders();
+      addToast(`Order ${orderId} has been cancelled.`, 'warning');
+      return true;
+    } catch (err) {
+      addToast('Server connection error while cancelling order.', 'error');
+      return false;
+    }
+  };
+
   // --- CONTEXT EXPORTS ---
   return (
     <StoreContext.Provider
@@ -511,6 +564,8 @@ export const StoreProvider = ({ children }) => {
         registeredUsers,
         currentUser,
         isAdminLoggedIn,
+        trackingOrderId,
+        setTrackingOrderId,
         
         switchView,
         switchAdminPanel,
@@ -525,6 +580,9 @@ export const StoreProvider = ({ children }) => {
         saveProduct,
         deleteProduct,
         changeOrderStatus,
+        addTrackingUpdate,
+        cancelOrderWithReason,
+        fetchOrders,
         addToast,
         removeToast,
         

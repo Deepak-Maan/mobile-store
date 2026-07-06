@@ -4,6 +4,7 @@ import { useStore } from '../context/StoreContext';
 import { X, ShoppingCart, ChevronLeft, ChevronRight } from 'lucide-react';
 import { ProductImage } from './ProductImage';
 import gsap from 'gsap';
+import { formatINR } from '../utils/currency';
 
 export const ProductModal = () => {
   const { selectedProductId, setSelectedProductId, products, addToCart } = useStore();
@@ -147,7 +148,7 @@ export const ProductModal = () => {
               <div className="modal-details">
                 <span className="modal-brand">{phone.brand}</span>
                 <h2 className="modal-name">{phone.name}</h2>
-                <span className="modal-price">${phone.price.toLocaleString()}</span>
+                <span className="modal-price">{formatINR(phone.price)}</span>
                 <p className="modal-desc">{phone.description}</p>
                 
                 <h4 className="specs-title">Technical Specifications</h4>

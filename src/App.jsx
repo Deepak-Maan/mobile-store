@@ -18,6 +18,10 @@ import { InteractiveBackground } from './components/InteractiveBackground';
 import { CustomCursor } from './components/CustomCursor';
 import { FeaturesSection } from './components/FeaturesSection';
 import { StatsSection } from './components/StatsSection';
+import { OrderTracker } from './components/OrderTracker';
+import { OrderHistory } from './components/OrderHistory';
+
+
 
 function App() {
   const { currentView, isAdminLoggedIn } = useStore();
@@ -73,6 +77,30 @@ function App() {
               <Catalog />
               <StatsSection />
               <Faq />
+            </motion.div>
+          )}
+
+          {currentView === 'tracking' && (
+            <motion.div
+              key="tracking"
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -15 }}
+              transition={{ duration: 0.4, ease: 'easeOut' }}
+            >
+              <OrderTracker />
+            </motion.div>
+          )}
+
+          {currentView === 'history' && (
+            <motion.div
+              key="history"
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -15 }}
+              transition={{ duration: 0.4, ease: 'easeOut' }}
+            >
+              <OrderHistory />
             </motion.div>
           )}
 

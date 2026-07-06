@@ -3302,20 +3302,20 @@ body.hide-native-cursor textarea {
 /* Stats Counter Grid */
 .stats-grid-layout {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 1.25rem;
+  grid-template-columns: 1fr;
+  gap: 1.5rem;
   width: 100%;
 }
 
-@media (min-width: 1024px) {
+@media (min-width: 500px) {
   .stats-grid-layout {
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(2, 1fr);
   }
 }
 
-@media (max-width: 480px) {
+@media (min-width: 1200px) {
   .stats-grid-layout {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(4, 1fr);
   }
 }
 
@@ -3323,19 +3323,166 @@ body.hide-native-cursor textarea {
 .testimonials-grid-layout {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 1.25rem;
+  gap: 1.5rem;
   width: 100%;
 }
 
-@media (min-width: 640px) {
+/* On mobile/small screen (max-width: 767px), show ONLY 1 active testimonial card as a clean slider */
+@media (max-width: 767px) {
+  .testimonials-grid-layout {
+    max-width: 480px;
+    margin: 0 auto;
+    grid-template-columns: 1fr;
+  }
+  .testimonials-grid-layout .testimonial-card:not(.active-card) {
+    display: none !important;
+  }
+  .testimonials-grid-layout .testimonial-card.active-card {
+    animation: testimonialSlideIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+}
+
+/* On tablet/medium screens (768px to 1199px), show 2 columns */
+@media (min-width: 768px) and (max-width: 1199px) {
   .testimonials-grid-layout {
     grid-template-columns: repeat(2, 1fr);
   }
 }
 
-@media (min-width: 1024px) {
+/* On desktop/large screens (>= 1200px), show all 4 columns */
+@media (min-width: 1200px) {
   .testimonials-grid-layout {
     grid-template-columns: repeat(4, 1fr);
   }
 }
+
+@keyframes testimonialSlideIn {
+  from {
+    opacity: 0;
+    transform: scale(0.96) translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+/* ==========================================================================
+   AURA ORDER TRACKING & ADMIN LIFECYCLE MANAGEMENT STYLES
+   ========================================================================== */
+
+/* Admin Expand Row & Manage Panel */
+.order-expand-row {
+  background: rgba(10, 10, 20, 0.4) !important;
+}
+
+.order-manage-panel {
+  padding: 1.75rem 2rem;
+  border-top: 1px dashed var(--border-color);
+  border-bottom: 1px dashed var(--border-color);
+  display: flex;
+  flex-direction: column;
+  gap: 1.75rem;
+}
+
+.order-manage-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.order-manage-heading {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.88rem;
+  color: var(--text-primary);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.order-manage-fields {
+  display: flex;
+  gap: 0.75rem;
+  width: 100%;
+}
+
+@media (max-width: 640px) {
+  .order-manage-fields {
+    flex-direction: column;
+  }
+}
+
+.order-status-select {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  padding: 0.6rem 0.8rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.9rem;
+  outline: none;
+  cursor: pointer;
+  transition: var(--transition-smooth);
+}
+
+.order-status-select:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 8px var(--primary-glow);
+}
+
+/* Admin Timeline and customer timeline */
+.admin-timeline {
+  position: relative;
+  padding-left: 1.75rem;
+  margin-top: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.admin-timeline::before {
+  content: '';
+  position: absolute;
+  left: 0.35rem;
+  top: 0.25rem;
+  bottom: 0.25rem;
+  width: 1.5px;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.admin-timeline-step {
+  position: relative;
+  display: flex;
+  gap: 1rem;
+}
+
+.admin-timeline-dot {
+  position: absolute;
+  left: -1.62rem;
+  top: 0.35rem;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  z-index: 2;
+}
+
+.admin-timeline-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+/* Cancel Info Card */
+.cancel-info-card {
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  background: rgba(239, 68, 68, 0.04);
+  padding: 1.25rem;
+  border-radius: var(--radius-md);
+  box-shadow: 0 4px 15px rgba(239, 68, 68, 0.05);
+  backdrop-filter: var(--glass-filter);
+  -webkit-backdrop-filter: var(--glass-filter);
+}
+
+
 

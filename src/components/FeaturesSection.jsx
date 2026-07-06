@@ -155,7 +155,7 @@ export const FeaturesSection = () => {
                   Express Delivery
                 </h3>
                 <p className="text-sm leading-relaxed max-w-xs" style={{ color: 'var(--text-secondary)' }}>
-                  Free next-day shipping on all orders over $500. Real-time tracking from our warehouse to your door.
+                  Free next-day shipping on all orders over ₹42,500. Real-time tracking from our warehouse to your door.
                 </p>
                 <div className="flex flex-wrap gap-2 mt-4">
                   {['Free Shipping', 'Next-Day', 'Live Tracking'].map(t => (

@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useStore } from '../context/StoreContext';
 import { X, Trash2, ShoppingCart, ArrowRight } from 'lucide-react';
 import { ProductImage } from './ProductImage';
+import { formatINR } from '../utils/currency';
 
 export const CartDrawer = ({ isOpen, onClose }) => {
   const { cart, products, updateCartQuantity, removeFromCart, switchView } = useStore();
@@ -89,7 +90,7 @@ export const CartDrawer = ({ isOpen, onClose }) => {
                       <div className="cart-item-info">
                         <h4 className="cart-item-name">{phone.name}</h4>
                         <span className="cart-item-brand">{phone.brand}</span>
-                        <div className="cart-item-price">${phone.price.toLocaleString()}</div>
+                        <div className="cart-item-price">{formatINR(phone.price)}</div>
                         
                         <div className="cart-item-controls">
                           <div className="quantity-controller">
@@ -127,7 +128,7 @@ export const CartDrawer = ({ isOpen, onClose }) => {
               <div className="cart-footer" id="cart-footer-summary">
                 <div className="cart-summary-row">
                   <span>Subtotal</span>
-                  <span id="cart-subtotal-price">${subtotal.toLocaleString()}</span>
+                  <span id="cart-subtotal-price">{formatINR(subtotal)}</span>
                 </div>
                 <div className="cart-summary-row">
                   <span>Estimated Shipping</span>
@@ -135,7 +136,7 @@ export const CartDrawer = ({ isOpen, onClose }) => {
                 </div>
                 <div className="cart-summary-row total">
                   <span>Estimated Total</span>
-                  <span id="cart-total-price">${subtotal.toLocaleString()}</span>
+                  <span id="cart-total-price">{formatINR(subtotal)}</span>
                 </div>
                 <button 
                   className="checkout-btn" 

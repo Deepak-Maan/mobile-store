@@ -543,6 +543,99 @@ app.patch('/api/orders/:id/status', (req, res) => {
   res.json({ message: `Order status updated to ${newStatus}`, order: db.orders.find(o => o.id === orderId) });
 });
 
+// 4. Add a tracking update to an order (Admin only)
+app.patch('/api/orders/:id/tracking', (req, res) => {
+  const db = readDB();
+  const orderId = req.params.id;
+  const { location, note, status } = req.body;
+
+  const orderIndex = db.orders.findIndex((o) => o.id === orderId);
+  if (orderIndex === -1) {
+    return res.status(404).json({ error: 'Order not found.' });
+  }
+
+  const order = db.orders[orderIndex];
+  if (!order.trackingUpdates) order.trackingUpdates = [];
+
+  const newUpdate = {
+    timestamp: new Date().toISOString(),
+    location: location || '',
+    note: note || '',
+    status: status || order.status
+  };
+
+  order.trackingUpdates.push(newUpdate);
+
+  // Also update the order's main status if provided
+  if (status) {
+    order.status = status;
+  }
+
+  db.orders[orderIndex] = order;
+  writeDB(db);
+  res.json({ message: 'Tracking update added successfully', order });
+});
+
+// 5. Cancel an order with a reason (Admin only)
+app.patch('/api/orders/:id/cancel', (req, res) => {
+  const db = readDB();
+  const orderId = req.params.id;
+  const { reason } = req.body;
+
+  if (!reason || !reason.trim()) {
+    return res.status(400).json({ error: 'A cancellation reason is required.' });
+  }
+
+  const orderIndex = db.orders.findIndex((o) => o.id === orderId);
+  if (orderIndex === -1) {
+    return res.status(404).json({ error: 'Order not found.' });
+  }
+
+  const order = db.orders[orderIndex];
+
+  if (order.status === 'cancelled') {
+    return res.status(400).json({ error: 'Order is already cancelled.' });
+  }
+
+  // Restore stock for all items
+  for (const item of order.items) {
+    const prod = db.products.find((p) => p.id === item.id);
+    if (prod) {
+      prod.stock += item.quantity;
+    }
+  }
+
+  // Compute refund date: 7 business days from now
+  const refundDateObj = new Date();
+  refundDateObj.setDate(refundDateObj.getDate() + 7);
+  const refundDateFormatted = refundDateObj.toLocaleDateString('en-IN', {
+    year: 'numeric', month: 'short', day: 'numeric'
+  });
+  const cancelledAtFormatted = new Date().toLocaleDateString('en-IN', {
+    year: 'numeric', month: 'short', day: 'numeric'
+  });
+
+  // Add final tracking entry
+  if (!order.trackingUpdates) order.trackingUpdates = [];
+  order.trackingUpdates.push({
+    timestamp: new Date().toISOString(),
+    location: 'Order Management',
+    note: `Order cancelled. Reason: ${reason.trim()}`,
+    status: 'cancelled'
+  });
+
+  db.orders[orderIndex] = {
+    ...order,
+    status: 'cancelled',
+    cancelReason: reason.trim(),
+    cancelledAt: cancelledAtFormatted,
+    refundDate: refundDateFormatted
+  };
+
+  writeDB(db);
+  res.json({ message: 'Order cancelled successfully', order: db.orders[orderIndex] });
+});
+
 // Start Server
 app.listen(PORT, () => {
   console.log(`==================================================`);
