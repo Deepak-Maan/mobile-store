@@ -4,6 +4,17 @@ import { ProductCard } from './ProductCard';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Search, Inbox } from 'lucide-react';
 
+const SkeletonCard = () => (
+  <div className="product-card skeleton-shimmer-card" style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem', padding: '1.5rem', height: '100%', minHeight: '410px' }}>
+    <div className="skeleton-image-placeholder" style={{ height: '200px', width: '100%', background: 'rgba(255,255,255,0.03)', borderRadius: '12px' }}></div>
+    <div className="skeleton-text-line brand" style={{ height: '12px', width: '40%', background: 'rgba(255,255,255,0.03)', borderRadius: '4px', marginTop: '0.5rem' }}></div>
+    <div className="skeleton-text-line title" style={{ height: '22px', width: '80%', background: 'rgba(255,255,255,0.03)', borderRadius: '4px' }}></div>
+    <div className="skeleton-text-line price" style={{ height: '20px', width: '30%', background: 'rgba(255,255,255,0.03)', borderRadius: '4px' }}></div>
+    <div className="skeleton-text-line desc" style={{ height: '36px', width: '100%', background: 'rgba(255,255,255,0.03)', borderRadius: '4px' }}></div>
+    <div className="skeleton-button-placeholder" style={{ height: '42px', width: '100%', background: 'rgba(255,255,255,0.03)', borderRadius: '8px', marginTop: 'auto' }}></div>
+  </div>
+);
+
 export const Catalog = () => {
   const {
     products,
@@ -12,8 +23,26 @@ export const Catalog = () => {
     searchQuery,
     setSearchQuery,
     sortBy,
-    setSortBy
+    setSortBy,
+    isLoading
   } = useStore();
+
+  const [localSearch, setLocalSearch] = React.useState(searchQuery);
+
+  // Debounced search sync
+  React.useEffect(() => {
+    const handler = setTimeout(() => {
+      setSearchQuery(localSearch);
+    }, 220);
+    return () => clearTimeout(handler);
+  }, [localSearch, setSearchQuery]);
+
+  // Sync back local input if search query is reset globally
+  React.useEffect(() => {
+    if (searchQuery === '' && localSearch !== '') {
+      setLocalSearch('');
+    }
+  }, [searchQuery]);
 
   const brands = ['All', 'Apple', 'Samsung', 'Google', 'OnePlus', 'Xiaomi'];
 
@@ -52,8 +81,8 @@ export const Catalog = () => {
             <input
               type="text"
               id="search-input"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              value={localSearch}
+              onChange={(e) => setLocalSearch(e.target.value)}
               placeholder="Search smartphones by brand, name or specs..."
             />
           </div>
@@ -92,7 +121,20 @@ export const Catalog = () => {
           id="product-catalog-grid"
         >
           <AnimatePresence mode="popLayout">
-            {sortedProducts.length === 0 ? (
+            {isLoading ? (
+              Array.from({ length: 3 }).map((_, idx) => (
+                <motion.div
+                  layout
+                  key={`skeleton-${idx}`}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.3 }}
+                >
+                  <SkeletonCard />
+                </motion.div>
+              ))
+            ) : sortedProducts.length === 0 ? (
               <motion.div
                 layout
                 initial={{ opacity: 0, scale: 0.9 }}

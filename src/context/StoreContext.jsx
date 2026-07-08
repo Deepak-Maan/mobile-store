@@ -1,4 +1,4 @@
-import React, { createContext, useState, useEffect, useContext } from 'react';
+import React, { createContext, useState, useEffect, useContext, useRef } from 'react';
 
 const StoreContext = createContext();
 
@@ -11,6 +11,12 @@ export const StoreProvider = ({ children }) => {
   const [products, setProducts] = useState([]);
   const [cart, setCart] = useState([]);
   const [orders, setOrders] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [wishlist, setWishlist] = useState([]);
+  const [theme, setTheme] = useState('dark');
+  const [compareIds, setCompareIds] = useState([]);
+  
+  const warnedLowStockRef = useRef(new Set());
   
   // Auth state
   const [registeredUsers, setRegisteredUsers] = useState([]);
@@ -31,19 +37,33 @@ export const StoreProvider = ({ children }) => {
   const [toasts, setToasts] = useState([]);
 
   // --- API GETTERS ---
-  const fetchProducts = async () => {
+  async function fetchProducts() {
+    setIsLoading(true);
     try {
       const res = await fetch(`${API_BASE}/products`);
       if (res.ok) {
         const data = await res.json();
         setProducts(data);
+        
+        // Low Stock Alerting (triggered exactly once per product per browser lifecycle)
+        data.forEach((p) => {
+          if (p.stock > 0 && p.stock < 3 && !warnedLowStockRef.current.has(p.id)) {
+            addToast(`Low Stock Alert: Only ${p.stock} units left for ${p.name}!`, 'warning');
+            warnedLowStockRef.current.add(p.id);
+          }
+        });
       } else {
         console.error('Failed to load products from server');
       }
     } catch (err) {
       console.error('Failed to connect to server for products:', err);
+    } finally {
+      // 550ms delay for visual shimmer loader stability
+      setTimeout(() => {
+        setIsLoading(false);
+      }, 550);
     }
-  };
+  }
 
   const fetchUsers = async () => {
     try {
@@ -100,6 +120,21 @@ export const StoreProvider = ({ children }) => {
     const storedAdminSession = sessionStorage.getItem('mobile_store_admin_active');
     if (storedAdminSession) {
       setIsAdminLoggedIn(JSON.parse(storedAdminSession));
+    }
+
+    // Load wishlist
+    const storedWish = localStorage.getItem('mobile_store_wishlist_react');
+    if (storedWish) {
+      setWishlist(JSON.parse(storedWish));
+    }
+
+    // Load theme preference
+    const storedTheme = localStorage.getItem('mobile_store_theme_react') || 'dark';
+    setTheme(storedTheme);
+    if (storedTheme === 'light') {
+      document.body.classList.add('light-theme');
+    } else {
+      document.body.classList.remove('light-theme');
     }
   }, []);
 
@@ -314,7 +349,7 @@ export const StoreProvider = ({ children }) => {
   };
 
   // --- CART OPERATIONS (Local-first, instant, browser-persisted) ---
-  const addToCart = (productId) => {
+  const addToCart = (productId, options = {}) => {
     const phone = products.find((p) => p.id === productId);
     if (!phone) return;
 
@@ -323,7 +358,13 @@ export const StoreProvider = ({ children }) => {
       return;
     }
 
-    const existingCartItem = cart.find((item) => item.productId === productId);
+    const isAccessory = phone.brand === 'Aura Accessories';
+    const storage = isAccessory ? '' : (options.storage || '128GB');
+    const color = isAccessory ? '' : (options.color || 'Obsidian Black');
+
+    const existingCartItem = cart.find(
+      (item) => item.productId === productId && item.storage === storage && item.color === color
+    );
     let updatedCart = [];
 
     if (existingCartItem) {
@@ -332,19 +373,25 @@ export const StoreProvider = ({ children }) => {
         return;
       }
       updatedCart = cart.map((item) =>
-        item.productId === productId ? { ...item, quantity: item.quantity + 1 } : item
+        item.productId === productId && item.storage === storage && item.color === color
+          ? { ...item, quantity: item.quantity + 1 }
+          : item
       );
     } else {
-      updatedCart = [...cart, { productId, quantity: 1 }];
+      updatedCart = [...cart, { productId, quantity: 1, storage, color }];
     }
 
     setCart(updatedCart);
     localStorage.setItem('mobile_store_cart_react_hybrid', JSON.stringify(updatedCart));
-    addToast(`Added ${phone.name} to cart.`, 'success');
+    
+    const variantDesc = isAccessory ? '' : ` (${storage} • ${color})`;
+    addToast(`Added ${phone.name}${variantDesc} to cart.`, 'success');
   };
 
-  const updateCartQuantity = (productId, delta) => {
-    const cartItem = cart.find((item) => item.productId === productId);
+  const updateCartQuantity = (productId, storage, color, delta) => {
+    const cartItem = cart.find(
+      (item) => item.productId === productId && item.storage === storage && item.color === color
+    );
     const phone = products.find((p) => p.id === productId);
 
     if (!cartItem || !phone) return;
@@ -352,7 +399,7 @@ export const StoreProvider = ({ children }) => {
     const newQty = cartItem.quantity + delta;
 
     if (newQty <= 0) {
-      removeFromCart(productId);
+      removeFromCart(productId, storage, color);
       return;
     }
 
@@ -362,20 +409,26 @@ export const StoreProvider = ({ children }) => {
     }
 
     const updatedCart = cart.map((item) =>
-      item.productId === productId ? { ...item, quantity: newQty } : item
+      item.productId === productId && item.storage === storage && item.color === color
+        ? { ...item, quantity: newQty }
+        : item
     );
     setCart(updatedCart);
     localStorage.setItem('mobile_store_cart_react_hybrid', JSON.stringify(updatedCart));
   };
 
-  const removeFromCart = (productId) => {
+  const removeFromCart = (productId, storage, color) => {
     const phone = products.find((p) => p.id === productId);
     const name = phone ? phone.name : 'Item';
 
-    const updatedCart = cart.filter((item) => item.productId !== productId);
+    const updatedCart = cart.filter(
+      (item) => !(item.productId === productId && item.storage === storage && item.color === color)
+    );
     setCart(updatedCart);
     localStorage.setItem('mobile_store_cart_react_hybrid', JSON.stringify(updatedCart));
-    addToast(`Removed ${name} from cart.`, 'warning');
+    
+    const variantDesc = (storage || color) ? ` (${storage} • ${color})` : '';
+    addToast(`Removed ${name}${variantDesc} from cart.`, 'warning');
   };
 
   const clearCart = () => {
@@ -384,7 +437,7 @@ export const StoreProvider = ({ children }) => {
   };
 
   // --- CHECKOUT & ORDER PROCESSING ---
-  const processOrder = async (shippingForm) => {
+  const processOrder = async (shippingForm, discountCode = '') => {
     if (cart.length === 0) return false;
 
     try {
@@ -394,7 +447,8 @@ export const StoreProvider = ({ children }) => {
         body: JSON.stringify({
           shippingForm,
           cart,
-          userEmail: currentUser ? currentUser.email : 'guest'
+          userEmail: currentUser ? currentUser.email : 'guest',
+          discountCode
         })
       });
       const data = await res.json();
@@ -545,6 +599,73 @@ export const StoreProvider = ({ children }) => {
     }
   };
 
+  const backupDatabase = () => {
+    window.location.href = `${API_BASE}/admin/backup`;
+  };
+
+  const restoreDatabase = async (backupData) => {
+    try {
+      const res = await fetch(`${API_BASE}/admin/restore`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(backupData)
+      });
+      const data = await res.json();
+      if (res.ok) {
+        addToast('Database backup successfully restored!', 'success');
+        await fetchProducts();
+        await fetchUsers();
+        await fetchOrders();
+        return true;
+      } else {
+        addToast(data.error || 'Failed to restore database.', 'error');
+        return false;
+      }
+    } catch (err) {
+      addToast('Error communicating with restoration server.', 'error');
+      return false;
+    }
+  };
+
+  const toggleWishlist = (productId) => {
+    let updated = [];
+    if (wishlist.includes(productId)) {
+      updated = wishlist.filter((id) => id !== productId);
+      addToast('Removed from favorites.', 'warning');
+    } else {
+      updated = [...wishlist, productId];
+      const prod = products.find((p) => p.id === productId);
+      const name = prod ? prod.name : 'Item';
+      addToast(`Added ${name} to favorites.`, 'success');
+    }
+    setWishlist(updated);
+    localStorage.setItem('mobile_store_wishlist_react', JSON.stringify(updated));
+  };
+
+  const toggleTheme = () => {
+    const nextTheme = theme === 'dark' ? 'light' : 'dark';
+    setTheme(nextTheme);
+    localStorage.setItem('mobile_store_theme_react', nextTheme);
+    if (nextTheme === 'light') {
+      document.body.classList.add('light-theme');
+    } else {
+      document.body.classList.remove('light-theme');
+    }
+  };
+
+  const toggleCompare = (productId) => {
+    if (compareIds.includes(productId)) {
+      setCompareIds(compareIds.filter((id) => id !== productId));
+    } else {
+      if (compareIds.length >= 3) {
+        addToast('You can compare a maximum of 3 smartphones side-by-side.', 'warning');
+        return;
+      }
+      setCompareIds([...compareIds, productId]);
+      addToast('Added to comparison list.', 'success');
+    }
+  };
+
   // --- CONTEXT EXPORTS ---
   return (
     <StoreContext.Provider
@@ -559,6 +680,11 @@ export const StoreProvider = ({ children }) => {
         searchQuery,
         sortBy,
         toasts,
+        isLoading,
+        wishlist,
+        theme,
+        compareIds,
+        setCompareIds,
         
         // Auth states
         registeredUsers,
@@ -585,6 +711,11 @@ export const StoreProvider = ({ children }) => {
         fetchOrders,
         addToast,
         removeToast,
+        backupDatabase,
+        restoreDatabase,
+        toggleWishlist,
+        toggleTheme,
+        toggleCompare,
         
         // Auth actions
         signUpUser,

@@ -20,16 +20,25 @@ import { FeaturesSection } from './components/FeaturesSection';
 import { StatsSection } from './components/StatsSection';
 import { OrderTracker } from './components/OrderTracker';
 import { OrderHistory } from './components/OrderHistory';
+import { UserProfile } from './components/UserProfile';
+
+// Storefront Expansion Components
+import { WishlistDrawer } from './components/WishlistDrawer';
+import { ComparisonConsole } from './components/ComparisonConsole';
+import { SalesTicker } from './components/SalesTicker';
+import { AccessoryBuilder } from './components/AccessoryBuilder';
 
 
 
 function App() {
-  const { currentView, isAdminLoggedIn } = useStore();
+  const { currentView, isAdminLoggedIn, compareIds } = useStore();
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isAuthOpen, setIsAuthOpen] = useState(false);
+  const [isWishlistOpen, setIsWishlistOpen] = useState(false);
+  const [isCompareOpen, setIsCompareOpen] = useState(false);
 
   useEffect(() => {
-    if (isCartOpen) {
+    if (isCartOpen || isWishlistOpen) {
       document.body.style.overflow = 'hidden';
     } else {
       document.body.style.overflow = '';
@@ -37,7 +46,7 @@ function App() {
     return () => {
       document.body.style.overflow = '';
     };
-  }, [isCartOpen]);
+  }, [isCartOpen, isWishlistOpen]);
 
   const handleExploreClick = () => {
     const catalogControls = document.getElementById('catalog-controls');
@@ -59,6 +68,7 @@ function App() {
       <Navbar 
         onOpenCart={() => setIsCartOpen(true)} 
         onOpenAuth={() => setIsAuthOpen(true)}
+        onOpenWishlist={() => setIsWishlistOpen(true)}
       />
 
       {/* Main View Router */}
@@ -75,6 +85,7 @@ function App() {
               <Hero onExplore={handleExploreClick} />
               <FeaturesSection />
               <Catalog />
+              <AccessoryBuilder />
               <StatsSection />
               <Faq />
             </motion.div>
@@ -101,6 +112,18 @@ function App() {
               transition={{ duration: 0.4, ease: 'easeOut' }}
             >
               <OrderHistory />
+            </motion.div>
+          )}
+
+          {currentView === 'profile' && (
+            <motion.div
+              key="profile"
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -15 }}
+              transition={{ duration: 0.4, ease: 'easeOut' }}
+            >
+              <UserProfile />
             </motion.div>
           )}
 
@@ -146,6 +169,38 @@ function App() {
       <ProductModal />
       <CartDrawer isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} />
       <AuthModal isOpen={isAuthOpen} onClose={() => setIsAuthOpen(false)} />
+      <WishlistDrawer isOpen={isWishlistOpen} onClose={() => setIsWishlistOpen(false)} />
+      <ComparisonConsole isOpen={isCompareOpen} onClose={() => setIsCompareOpen(false)} />
+
+      {/* Floating Interactive Live Activity Feeds */}
+      {currentView !== 'admin' && <SalesTicker />}
+
+      {/* Floating Compare Widget Pill */}
+      {compareIds.length > 0 && currentView === 'storefront' && (
+        <button
+          onClick={() => setIsCompareOpen(true)}
+          style={{
+            position: 'fixed',
+            bottom: '2rem',
+            right: '2rem',
+            zIndex: 290,
+            background: 'linear-gradient(135deg, var(--primary), var(--secondary))',
+            color: '#fff',
+            border: 'none',
+            borderRadius: '30px',
+            padding: '0.75rem 1.4rem',
+            fontWeight: '700',
+            fontSize: '0.85rem',
+            cursor: 'pointer',
+            boxShadow: '0 8px 24px rgba(99, 102, 241, 0.4)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.5rem'
+          }}
+        >
+          Compare ({compareIds.length})
+        </button>
+      )}
 
       {/* Global Footer */}
       {currentView !== 'admin' && currentView !== 'checkout' && (

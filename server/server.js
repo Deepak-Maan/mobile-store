@@ -3,6 +3,7 @@ import cors from 'cors';
 import morgan from 'morgan';
 import fs from 'fs';
 import path from 'path';
+import crypto from 'crypto';
 import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -41,6 +42,27 @@ const writeDB = (data) => {
     console.error('Error writing database file:', err);
     return false;
   }
+};
+
+// Helper: Hashing and cryptographic password checks
+const hashPassword = (password, salt) => {
+  if (!salt) {
+    salt = crypto.randomBytes(16).toString('hex');
+  }
+  const hash = crypto.pbkdf2Sync(password, salt, 1000, 64, 'sha512').toString('hex');
+  return { salt, hash };
+};
+
+const verifyPassword = (password, salt, hash) => {
+  const check = crypto.pbkdf2Sync(password, salt, 1000, 64, 'sha512').toString('hex');
+  return check === hash;
+};
+
+const checkPassword = (user, inputPassword) => {
+  if (user.salt && user.hash) {
+    return verifyPassword(inputPassword, user.salt, user.hash);
+  }
+  return user.password === inputPassword;
 };
 
 // Procedural SVG fallback generator (replicated from StoreContext.jsx)
@@ -315,11 +337,14 @@ app.post('/api/auth/register', (req, res) => {
     return res.status(400).json({ error: 'An account with this email address already exists.' });
   }
 
+  const { salt, hash } = hashPassword(userData.password);
+
   const newUser = {
     firstName: userData.firstName.trim(),
     lastName: userData.lastName.trim(),
     email: emailLower,
-    password: userData.password,
+    salt,
+    hash,
     isActive: true
   };
 
@@ -334,9 +359,9 @@ app.post('/api/auth/login', (req, res) => {
   const { email, password } = req.body;
   const emailLower = email.toLowerCase().trim();
 
-  const user = db.users.find((u) => u.email.toLowerCase() === emailLower && u.password === password);
+  const user = db.users.find((u) => u.email.toLowerCase() === emailLower);
 
-  if (!user) {
+  if (!user || !checkPassword(user, password)) {
     return res.status(401).json({ error: 'Invalid email or password details.' });
   }
 
@@ -367,11 +392,12 @@ app.put('/api/users', (req, res) => {
   db.users = db.users.map((u) => {
     if (u.email.toLowerCase().trim() === emailKey) {
       found = true;
+      const passUpdates = userData.password ? hashPassword(userData.password) : { salt: u.salt, hash: u.hash };
       return {
         ...u,
         firstName: userData.firstName.trim(),
         lastName: userData.lastName.trim(),
-        password: userData.password,
+        ...passUpdates,
         isActive: userData.isActive !== false
       };
     }
@@ -432,7 +458,7 @@ app.get('/api/orders', (req, res) => {
 // 2. Create a new order (Checkout)
 app.post('/api/orders', (req, res) => {
   const db = readDB();
-  const { shippingForm, cart, userEmail } = req.body;
+  const { shippingForm, cart, userEmail, discountCode } = req.body;
 
   if (!cart || cart.length === 0) {
     return res.status(400).json({ error: 'Cannot process order. Cart is empty.' });
@@ -456,17 +482,36 @@ app.post('/api/orders', (req, res) => {
   const orderItems = cart.map((item) => {
     const phone = db.products.find((p) => p.id === item.productId);
     phone.stock -= item.quantity;
-    const priceTotal = phone.price * item.quantity;
+    
+    // Add variant storage premium for smartphones
+    let itemPrice = phone.price;
+    if (phone.brand !== 'Aura Accessories') {
+      if (item.storage === '256GB') itemPrice += 8000;
+      else if (item.storage === '512GB') itemPrice += 16000;
+      else if (item.storage === '1TB') itemPrice += 24000;
+    }
+
+    const priceTotal = itemPrice * item.quantity;
     orderTotal += priceTotal;
 
     return {
       id: phone.id,
       name: phone.name,
       brand: phone.brand,
-      price: phone.price,
-      quantity: item.quantity
+      price: itemPrice,
+      quantity: item.quantity,
+      storage: item.storage || '',
+      color: item.color || ''
     };
   });
+
+  if (discountCode === 'AURA10') {
+    orderTotal = Math.round(orderTotal * 0.9);
+  } else if (discountCode === 'AURA20') {
+    orderTotal = Math.round(orderTotal * 0.8);
+  } else if (discountCode === 'WELCOME50') {
+    orderTotal = Math.round(orderTotal * 0.5);
+  }
 
   const orderId = `ORD-${Math.floor(100000 + Math.random() * 900000)}`;
   const dateFormatted = new Date().toLocaleDateString('en-US', {
@@ -634,6 +679,42 @@ app.patch('/api/orders/:id/cancel', (req, res) => {
 
   writeDB(db);
   res.json({ message: 'Order cancelled successfully', order: db.orders[orderIndex] });
+});
+
+// --- DATABASE MAINTENANCE (BACKUP & RESTORE) ---
+
+// 1. Download db.json backup
+app.get('/api/admin/backup', (req, res) => {
+  try {
+    if (!fs.existsSync(DB_PATH)) {
+      return res.status(404).json({ error: 'Database file not found.' });
+    }
+    res.download(DB_PATH, 'aura_db_backup.json');
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to generate database backup.' });
+  }
+});
+
+// 2. Upload / Restore database from backup
+app.post('/api/admin/restore', (req, res) => {
+  try {
+    const backupData = req.body;
+
+    // Schema Validation Check
+    if (!backupData || !Array.isArray(backupData.products) || !Array.isArray(backupData.users) || !Array.isArray(backupData.orders)) {
+      return res.status(400).json({ error: 'Invalid backup format. Must contain products, users, and orders arrays.' });
+    }
+
+    // Write database synchronously
+    const success = writeDB(backupData);
+    if (!success) {
+      return res.status(500).json({ error: 'Failed to write backup database to file.' });
+    }
+
+    res.json({ message: 'Database successfully restored from backup!', data: backupData });
+  } catch (err) {
+    res.status(500).json({ error: 'Error processing database restoration.' });
+  }
 });
 
 // Start Server

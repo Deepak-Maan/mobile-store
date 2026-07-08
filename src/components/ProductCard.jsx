@@ -1,12 +1,15 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { useStore } from '../context/StoreContext';
-import { Eye, Plus } from 'lucide-react';
+import { Eye, Plus, Heart } from 'lucide-react';
 import { ProductImage } from './ProductImage';
 import { formatINR } from '../utils/currency';
 
 export const ProductCard = ({ product }) => {
-  const { addToCart, setSelectedProductId } = useStore();
+  const { addToCart, setSelectedProductId, wishlist, toggleWishlist, compareIds, toggleCompare } = useStore();
+
+  const isWishlisted = wishlist.includes(product.id);
+  const isCompared = compareIds.includes(product.id);
 
   let stockClass = 'in-stock';
   let stockText = 'In Stock';
@@ -47,17 +50,61 @@ export const ProductCard = ({ product }) => {
       className="product-card" 
       id={`card-${product.id}`}
     >
-      <div className="card-img-wrapper">
-        {/* Renders the primary front view from the images array */}
+      <div className="card-img-wrapper" style={{ position: 'relative' }}>
         <ProductImage src={product.images[0]} alt={product.name} />
+        
+        {/* Wishlist toggle button */}
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            toggleWishlist(product.id);
+          }}
+          style={{
+            position: 'absolute',
+            top: '10px',
+            right: '10px',
+            background: 'rgba(0,0,0,0.4)',
+            backdropFilter: 'blur(8px)',
+            WebkitBackdropFilter: 'blur(8px)',
+            border: '1px solid rgba(255,255,255,0.08)',
+            borderRadius: '50%',
+            width: '32px',
+            height: '32px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            cursor: 'pointer',
+            color: isWishlisted ? 'var(--accent-red)' : '#fff',
+            zIndex: 10,
+            transition: 'all 0.2s ease'
+          }}
+          title={isWishlisted ? 'Remove from Favorites' : 'Add to Favorites'}
+        >
+          <Heart width="14" height="14" fill={isWishlisted ? 'var(--accent-red)' : 'none'} stroke={isWishlisted ? 'var(--accent-red)' : '#fff'} />
+        </button>
+
         <div className="badge-overlay">
           {product.featured && <span className="featured-badge">Featured</span>}
           <span className={`stock-badge ${stockClass}`}>{stockText}</span>
         </div>
       </div>
       
-      <span className="card-brand">{product.brand}</span>
-      <h3 className="card-title">{product.name}</h3>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '0.85rem' }}>
+        <span className="card-brand" style={{ margin: 0 }}>{product.brand}</span>
+        {product.brand !== 'Aura Accessories' && (
+          <label style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.72rem', color: 'var(--text-secondary)', cursor: 'pointer', userSelect: 'none' }}>
+            <input 
+              type="checkbox" 
+              checked={isCompared}
+              onChange={() => toggleCompare(product.id)}
+              style={{ accentColor: 'var(--primary)', cursor: 'pointer' }}
+            />
+            Compare
+          </label>
+        )}
+      </div>
+
+      <h3 className="card-title" style={{ marginTop: '0.2rem' }}>{product.name}</h3>
       <p className="card-desc">{product.description}</p>
       
       <div className="card-footer">

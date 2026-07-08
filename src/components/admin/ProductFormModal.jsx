@@ -7,6 +7,7 @@ import { ProductImage } from '../ProductImage';
 export const ProductFormModal = ({ isOpen, productId, onClose }) => {
   const { products, saveProduct } = useStore();
 
+  const [currentColorTab, setCurrentColorTab] = useState('Primary');
   const [form, setForm] = useState({
     id: '',
     name: '',
@@ -15,6 +16,8 @@ export const ProductFormModal = ({ isOpen, productId, onClose }) => {
     stock: '',
     description: '',
     images: ['', '', '', '', ''],
+    colors: ['Obsidian Black', 'Titanium Silver', 'Emerald Green', 'Desert Gold'],
+    colorImages: {}, // Maps colorName to ['', '', '', '', '']
     specs: {
       display: '',
       processor: '',
@@ -40,6 +43,10 @@ export const ProductFormModal = ({ isOpen, productId, onClose }) => {
           stock: phone.stock,
           description: phone.description,
           images: phone.images ? [...phone.images] : ['', '', '', '', ''],
+          colors: phone.colors && phone.colors.length > 0 
+            ? [...phone.colors] 
+            : ['Obsidian Black', 'Titanium Silver', 'Emerald Green', 'Desert Gold'],
+          colorImages: phone.colorImages ? { ...phone.colorImages } : {},
           specs: { ...phone.specs }
         });
       }
@@ -53,6 +60,8 @@ export const ProductFormModal = ({ isOpen, productId, onClose }) => {
         stock: '',
         description: '',
         images: ['', '', '', '', ''],
+        colors: ['Obsidian Black', 'Titanium Silver', 'Emerald Green', 'Desert Gold'],
+        colorImages: {},
         specs: {
           display: '',
           processor: '',
@@ -64,6 +73,7 @@ export const ProductFormModal = ({ isOpen, productId, onClose }) => {
       });
     }
     setActiveImageTab(0);
+    setCurrentColorTab('Primary');
   }, [productId, isOpen, products]);
 
   const handleInputChange = (e) => {
@@ -83,9 +93,20 @@ export const ProductFormModal = ({ isOpen, productId, onClose }) => {
 
   const handleImageUrlChange = (index, value) => {
     setForm((prev) => {
-      const updatedImages = [...prev.images];
-      updatedImages[index] = value;
-      return { ...prev, images: updatedImages };
+      if (currentColorTab === 'Primary') {
+        const updatedImages = [...prev.images];
+        updatedImages[index] = value;
+        return { ...prev, images: updatedImages };
+      } else {
+        const updatedColorImages = { ...prev.colorImages };
+        if (!updatedColorImages[currentColorTab]) {
+          updatedColorImages[currentColorTab] = ['', '', '', '', ''];
+        }
+        const updatedImages = [...updatedColorImages[currentColorTab]];
+        updatedImages[index] = value;
+        updatedColorImages[currentColorTab] = updatedImages;
+        return { ...prev, colorImages: updatedColorImages };
+      }
     });
   };
 
@@ -97,9 +118,20 @@ export const ProductFormModal = ({ isOpen, productId, onClose }) => {
     reader.onloadend = () => {
       const base64String = reader.result;
       setForm((prev) => {
-        const updatedImages = [...prev.images];
-        updatedImages[index] = base64String;
-        return { ...prev, images: updatedImages };
+        if (currentColorTab === 'Primary') {
+          const updatedImages = [...prev.images];
+          updatedImages[index] = base64String;
+          return { ...prev, images: updatedImages };
+        } else {
+          const updatedColorImages = { ...prev.colorImages };
+          if (!updatedColorImages[currentColorTab]) {
+            updatedColorImages[currentColorTab] = ['', '', '', '', ''];
+          }
+          const updatedImages = [...updatedColorImages[currentColorTab]];
+          updatedImages[index] = base64String;
+          updatedColorImages[currentColorTab] = updatedImages;
+          return { ...prev, colorImages: updatedColorImages };
+        }
       });
     };
     reader.readAsDataURL(file);
@@ -107,9 +139,19 @@ export const ProductFormModal = ({ isOpen, productId, onClose }) => {
 
   const handleClearImage = (index) => {
     setForm((prev) => {
-      const updatedImages = [...prev.images];
-      updatedImages[index] = '';
-      return { ...prev, images: updatedImages };
+      if (currentColorTab === 'Primary') {
+        const updatedImages = [...prev.images];
+        updatedImages[index] = '';
+        return { ...prev, images: updatedImages };
+      } else {
+        const updatedColorImages = { ...prev.colorImages };
+        if (updatedColorImages[currentColorTab]) {
+          const updatedImages = [...updatedColorImages[currentColorTab]];
+          updatedImages[index] = '';
+          updatedColorImages[currentColorTab] = updatedImages;
+        }
+        return { ...prev, colorImages: updatedColorImages };
+      }
     });
   };
 
@@ -117,7 +159,9 @@ export const ProductFormModal = ({ isOpen, productId, onClose }) => {
     e.preventDefault();
     const productToSave = {
       ...form,
-      price: parseInt(form.price) || 0
+      price: parseInt(form.price) || 0,
+      colors: form.colors,
+      colorImages: form.colorImages
     };
     saveProduct(productToSave);
     onClose();
@@ -136,6 +180,10 @@ export const ProductFormModal = ({ isOpen, productId, onClose }) => {
     'Camera Macro',
     'Lifestyle Shot'
   ];
+
+  const activeGallery = currentColorTab === 'Primary' 
+    ? form.images 
+    : (form.colorImages[currentColorTab] || ['', '', '', '', '']);
 
   return (
     <AnimatePresence>
@@ -178,12 +226,53 @@ export const ProductFormModal = ({ isOpen, productId, onClose }) => {
               {/* Product Photos & Gallery Manager */}
               <div className="form-group" style={{ marginBottom: '1.2rem', borderBottom: '1px solid var(--border-color)', paddingBottom: '1.2rem' }}>
                 <label style={{ fontSize: '0.85rem', fontWeight: 800, color: 'var(--primary)', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '0.6rem', display: 'block' }}>
-                  Smartphone Photo Gallery (Up to 5 Photos)
+                  Smartphone Photo Gallery (Select Tab to Edit Color)
                 </label>
                 
+                {/* Horizontal Color-Specific Switcher Tabs */}
+                <div style={{ display: 'flex', gap: '0.45rem', marginBottom: '0.9rem', overflowX: 'auto', paddingBottom: '0.2rem' }}>
+                  <button
+                    type="button"
+                    onClick={() => setCurrentColorTab('Primary')}
+                    style={{
+                      padding: '0.35rem 0.85rem',
+                      borderRadius: '20px',
+                      fontSize: '0.74rem',
+                      fontWeight: 700,
+                      background: currentColorTab === 'Primary' ? 'var(--primary)' : 'rgba(255,255,255,0.03)',
+                      border: currentColorTab === 'Primary' ? '1px solid var(--primary)' : '1px solid rgba(255,255,255,0.08)',
+                      color: currentColorTab === 'Primary' ? '#000' : 'var(--text-secondary)',
+                      cursor: 'pointer',
+                      whiteSpace: 'nowrap'
+                    }}
+                  >
+                    Primary (Fallback)
+                  </button>
+                  {form.colors.map((colorName) => (
+                    <button
+                      key={colorName}
+                      type="button"
+                      onClick={() => setCurrentColorTab(colorName)}
+                      style={{
+                        padding: '0.35rem 0.85rem',
+                        borderRadius: '20px',
+                        fontSize: '0.74rem',
+                        fontWeight: 700,
+                        background: currentColorTab === colorName ? 'var(--primary)' : 'rgba(255,255,255,0.03)',
+                        border: currentColorTab === colorName ? '1px solid var(--primary)' : '1px solid rgba(255,255,255,0.08)',
+                        color: currentColorTab === colorName ? '#000' : 'var(--text-secondary)',
+                        cursor: 'pointer',
+                        whiteSpace: 'nowrap'
+                      }}
+                    >
+                      🎨 {colorName}
+                    </button>
+                  ))}
+                </div>
+
                 {/* Horizontal Thumbnails Row */}
                 <div style={{ display: 'flex', gap: '0.6rem', marginBottom: '0.8rem', overflowX: 'auto', paddingBottom: '0.4rem' }}>
-                  {form.images.map((imgSrc, idx) => {
+                  {activeGallery.map((imgSrc, idx) => {
                     const hasImg = imgSrc && imgSrc.trim() !== '';
                     const isActive = activeImageTab === idx;
                     
@@ -236,11 +325,11 @@ export const ProductFormModal = ({ isOpen, productId, onClose }) => {
                 >
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#fff' }}>
-                      Configure: {imageTabNames[activeImageTab]}
+                      Configure: {imageTabNames[activeImageTab]} ({currentColorTab === 'Primary' ? 'Primary' : currentColorTab})
                     </span>
-                    {!form.images[activeImageTab] ? (
+                    {!activeGallery[activeImageTab] ? (
                       <span style={{ fontSize: '0.68rem', color: 'var(--text-muted)', fontStyle: 'italic' }}>
-                        Falls back to procedural SVG
+                        Falls back to primary / fallback photo
                       </span>
                     ) : (
                       <button
@@ -275,7 +364,7 @@ export const ProductFormModal = ({ isOpen, productId, onClose }) => {
                       <input
                         type="text"
                         placeholder="Paste photo URL or path (e.g. /images/...)"
-                        value={form.images[activeImageTab]}
+                        value={activeGallery[activeImageTab]}
                         onChange={(e) => handleImageUrlChange(activeImageTab, e.target.value)}
                         style={{ paddingLeft: '2.2rem', margin: 0, fontSize: '0.82rem', height: '38px' }}
                       />
@@ -313,6 +402,7 @@ export const ProductFormModal = ({ isOpen, productId, onClose }) => {
                 </div>
               </div>
 
+
               <div className="form-group-row">
                 <div className="form-group">
                   <label htmlFor="form-product-name">Smartphone Name</label>
@@ -341,6 +431,40 @@ export const ProductFormModal = ({ isOpen, productId, onClose }) => {
                   </select>
                 </div>
               </div>
+
+              {/* Supported Variant Colors Checkboxes */}
+              {form.brand !== 'Aura Accessories' && (
+                <div className="form-group" style={{ marginBottom: '1.2rem' }}>
+                  <label style={{ fontSize: '0.85rem', fontWeight: 800, color: 'var(--primary)', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '0.4rem', display: 'block' }}>Supported Variant Colors</label>
+                  <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', marginTop: '0.2rem' }}>
+                    {['Obsidian Black', 'Titanium Silver', 'Emerald Green', 'Desert Gold'].map((colorName) => {
+                      const isChecked = form.colors.includes(colorName);
+                      return (
+                        <label key={colorName} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.82rem', cursor: 'pointer', color: 'var(--text-secondary)' }}>
+                          <input
+                            type="checkbox"
+                            checked={isChecked}
+                            onChange={(e) => {
+                              const checked = e.target.checked;
+                              setForm((prev) => {
+                                let nextColors = [...prev.colors];
+                                if (checked) {
+                                  if (!nextColors.includes(colorName)) nextColors.push(colorName);
+                                } else {
+                                  nextColors = nextColors.filter(c => c !== colorName);
+                                }
+                                return { ...prev, colors: nextColors };
+                              });
+                            }}
+                            style={{ margin: 0, width: 'auto', cursor: 'pointer' }}
+                          />
+                          {colorName}
+                        </label>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
 
               <div className="form-group-row">
                 <div className="form-group">

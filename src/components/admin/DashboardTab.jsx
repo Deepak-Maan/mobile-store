@@ -5,7 +5,28 @@ import { IndianRupee, ShoppingCart, Smartphone, AlertCircle } from 'lucide-react
 import { formatINR } from '../../utils/currency';
 
 export const DashboardTab = () => {
-  const { products, orders } = useStore();
+  const { products, orders, backupDatabase, restoreDatabase } = useStore();
+  const fileInputRef = React.useRef(null);
+
+  const handleFileUpload = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+      try {
+        const json = JSON.parse(event.target.result);
+        const confirmRestore = window.confirm("WARNING: Restoring the database will overwrite all inventory products, customer accounts, and order history records with the backup file data. Are you sure you want to proceed?");
+        if (confirmRestore) {
+          await restoreDatabase(json);
+        }
+      } catch (err) {
+        alert("Invalid file: Failed to parse JSON database backup.");
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = '';
+  };
 
   // 1. Calculate General Numbers
   const nonCancelledOrders = orders.filter((o) => o.status !== 'cancelled');
@@ -184,6 +205,57 @@ export const DashboardTab = () => {
               })
             )}
           </div>
+        </div>
+      </div>
+
+      {/* Database Maintenance Section */}
+      <div 
+        className="chart-card" 
+        style={{ 
+          marginTop: '1.5rem', 
+          background: 'rgba(99, 102, 241, 0.03)', 
+          border: '1px solid rgba(99, 102, 241, 0.15)',
+          borderRadius: '16px',
+          padding: '1.5rem',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          flexWrap: 'wrap',
+          gap: '1rem'
+        }}
+      >
+        <div>
+          <h3 style={{ margin: 0, border: 'none', padding: 0, fontSize: '1rem', fontWeight: '700', color: '#fff' }}>
+            Administrative Database Maintenance
+          </h3>
+          <p style={{ margin: '0.25rem 0 0 0', fontSize: '0.82rem', color: 'var(--text-muted)' }}>
+            Safely download backups or restore database entities (products, user records, and invoices).
+          </p>
+        </div>
+        <div style={{ display: 'flex', gap: '0.85rem' }}>
+          <button 
+            className="admin-filter-btn" 
+            onClick={backupDatabase}
+            style={{ padding: '0.6rem 1.25rem', borderRadius: '8px', cursor: 'pointer', background: 'rgba(255,255,255,0.05)', color: '#fff', border: '1px solid var(--border-color)', fontWeight: '600' }}
+          >
+            Download Database Backup
+          </button>
+          
+          <button 
+            className="admin-filter-btn" 
+            onClick={() => fileInputRef.current.click()}
+            style={{ padding: '0.6rem 1.25rem', borderRadius: '8px', cursor: 'pointer', background: 'linear-gradient(135deg, var(--primary), var(--secondary))', color: '#fff', border: 'none', fontWeight: '600' }}
+          >
+            Upload Backup File
+          </button>
+          
+          <input 
+            type="file" 
+            accept=".json" 
+            ref={fileInputRef} 
+            onChange={handleFileUpload} 
+            style={{ display: 'none' }} 
+          />
         </div>
       </div>
     </div>

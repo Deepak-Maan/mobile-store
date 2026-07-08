@@ -20,12 +20,14 @@ const StatusBadge = ({ status }) => {
   const m = STATUS_META[status] || STATUS_META.pending;
   const Icon = m.Icon;
   return (
-    <span style={{
-      display: 'inline-flex', alignItems: 'center', gap: '0.35rem',
-      color: m.color, background: m.bg, border: `1px solid ${m.border}`,
-      padding: '0.28rem 0.75rem', borderRadius: '20px',
-      fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em',
-    }}>
+    <span 
+      className={`admin-order-status-badge status-${status}`}
+      style={{
+        color: m.color,
+        background: m.bg,
+        borderColor: m.border
+      }}
+    >
       <Icon size={11} strokeWidth={2.5} />
       {m.label}
     </span>
@@ -46,7 +48,6 @@ const OrderDetailPanel = ({ order, onClose }) => {
   const [showCancel, setShowCancel]       = useState(false);
 
   const isCancelled = order.status === 'cancelled';
-  const m = STATUS_META[order.status] || STATUS_META.pending;
 
   const handleAddTracking = async () => {
     if (!trackLocation.trim()) return;
@@ -71,78 +72,78 @@ const OrderDetailPanel = ({ order, onClose }) => {
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: 8 }}
       transition={{ duration: 0.25 }}
-      style={{
-        background: 'rgba(10, 10, 20, 0.85)',
-        border: '1px solid var(--border-color)',
-        borderRadius: '16px',
-        padding: '1.75rem',
-        marginTop: '0.75rem',
-        backdropFilter: 'blur(12px)',
-      }}
+      className="admin-order-detail-panel"
     >
       {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
+      <div className="admin-order-detail-header">
         <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-            <span style={{ fontFamily: 'monospace', fontSize: '1.1rem', fontWeight: 800, color: '#fff' }}>#{order.id}</span>
+          <div className="admin-order-detail-id-row">
+            <span className="admin-order-detail-id-text">#{order.id}</span>
             <StatusBadge status={order.status} />
           </div>
-          <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem', marginTop: '0.25rem' }}>
+          <p className="admin-order-detail-meta">
             Placed on {order.date} · {order.paymentMethod === 'upi' ? 'UPI Payment' : 'Card Payment'}
           </p>
         </div>
-        <button onClick={onClose} style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border-color)', color: 'var(--text-secondary)', padding: '0.45rem 1rem', borderRadius: '8px', cursor: 'pointer', fontSize: '0.82rem', fontWeight: 600 }}>
+        <button onClick={onClose} className="admin-order-detail-close-btn">
           Close ✕
         </button>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.25rem' }}>
+      <div className="admin-order-detail-grid">
 
         {/* Customer Info */}
-        <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid var(--border-color)', borderRadius: '12px', padding: '1.1rem' }}>
-          <h4 style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '0.9rem' }}>Customer Details</h4>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+        <div className="admin-order-info-card">
+          <h4>Customer Details</h4>
+          <div className="admin-order-info-card-list">
+            <div className="admin-order-info-item">
               <User size={14} color="var(--primary)" />
-              <span style={{ color: '#fff', fontWeight: 600, fontSize: '0.88rem' }}>{order.customerName}</span>
+              <span className="admin-order-info-value">{order.customerName}</span>
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+            <div className="admin-order-info-item">
               <Mail size={14} color="var(--primary)" />
-              <span style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>{order.email}</span>
+              <span className="admin-order-info-label">{order.email}</span>
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+            <div className="admin-order-info-item">
               <Phone size={14} color="var(--primary)" />
-              <span style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>{order.phone}</span>
+              <span className="admin-order-info-label">{order.phone}</span>
             </div>
-            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.6rem' }}>
+            <div className="admin-order-info-item align-start">
               <MapPin size={14} color="var(--primary)" style={{ flexShrink: 0, marginTop: '0.15rem' }} />
-              <span style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', lineHeight: 1.4 }}>{order.address}</span>
+              <span className="admin-order-info-label">{order.address}</span>
             </div>
             {order.paymentMethod === 'upi' && order.utrNumber && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+              <div className="admin-order-info-item">
                 <Hash size={14} color="#a5b4fc" />
-                <span style={{ color: '#a5b4fc', fontSize: '0.82rem' }}>UTR: <code style={{ color: '#fff' }}>{order.utrNumber}</code></span>
+                <span className="admin-order-info-label" style={{ color: '#a5b4fc' }}>UTR: <code style={{ color: '#fff' }}>{order.utrNumber}</code></span>
               </div>
             )}
           </div>
         </div>
 
         {/* Items */}
-        <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid var(--border-color)', borderRadius: '12px', padding: '1.1rem' }}>
-          <h4 style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '0.9rem' }}>Order Items</h4>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+        <div className="admin-order-info-card">
+          <h4>Order Items</h4>
+          <div className="admin-order-items-list">
             {order.items.map((item, idx) => (
-              <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.5rem 0.75rem', background: 'rgba(255,255,255,0.02)', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.04)' }}>
-                <div>
-                  <div style={{ fontWeight: 600, color: '#fff', fontSize: '0.85rem' }}>{item.name}</div>
-                  <div style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>Qty: {item.quantity}</div>
+              <div key={idx} className="admin-order-item-row" style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem', alignItems: 'stretch' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                  <div className="admin-order-item-details">
+                    <div className="admin-order-item-name" style={{ fontWeight: 600 }}>{item.name}</div>
+                    <div className="admin-order-item-qty" style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Qty: {item.quantity}</div>
+                  </div>
+                  <span className="admin-order-item-price" style={{ fontWeight: 600 }}>{formatINR(item.price * item.quantity)}</span>
                 </div>
-                <span style={{ fontWeight: 700, color: 'var(--primary)', fontSize: '0.9rem' }}>{formatINR(item.price * item.quantity)}</span>
+                {(item.storage || item.color) && (
+                  <div style={{ fontSize: '0.78rem', color: 'var(--primary)', fontWeight: 500, paddingLeft: '0.2rem' }}>
+                    {item.storage || '128GB'} • {item.color || 'Obsidian Black'}
+                  </div>
+                )}
               </div>
             ))}
-            <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px solid var(--border-color)', paddingTop: '0.6rem', marginTop: '0.2rem' }}>
-              <span style={{ color: 'var(--text-secondary)', fontWeight: 600, fontSize: '0.85rem' }}>Order Total</span>
-              <span style={{ color: '#fff', fontWeight: 800, fontSize: '1rem' }}>{formatINR(order.total)}</span>
+            <div className="admin-order-detail-total-row">
+              <span>Order Total</span>
+              <strong>{formatINR(order.total)}</strong>
             </div>
           </div>
         </div>
@@ -151,8 +152,8 @@ const OrderDetailPanel = ({ order, onClose }) => {
 
       {/* Tracking History */}
       {order.trackingUpdates && order.trackingUpdates.length > 0 && (
-        <div style={{ marginTop: '1.25rem', background: 'rgba(255,255,255,0.02)', border: '1px solid var(--border-color)', borderRadius: '12px', padding: '1.1rem' }}>
-          <h4 style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+        <div className="admin-order-tracking-card">
+          <h4 style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
             <Truck size={13} /> Tracking History
           </h4>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0' }}>
@@ -160,24 +161,31 @@ const OrderDetailPanel = ({ order, onClose }) => {
               const st = STATUS_META[upd.status] || STATUS_META.pending;
               const isLast = i === arr.length - 1;
               return (
-                <div key={i} style={{ display: 'flex', gap: '1rem', position: 'relative' }}>
+                <div key={i} className="admin-order-tracking-step">
                   {/* Line */}
                   {!isLast && (
-                    <div style={{ position: 'absolute', left: '0.54rem', top: '1.5rem', bottom: '-0.5rem', width: '2px', background: 'rgba(255,255,255,0.06)' }} />
+                    <div className="admin-order-tracking-line" />
                   )}
                   {/* Dot */}
-                  <div style={{ width: '1.1rem', height: '1.1rem', borderRadius: '50%', background: i === 0 ? st.color : 'var(--bg-dark)', border: `2px solid ${st.color}`, flexShrink: 0, marginTop: '0.2rem', boxShadow: i === 0 ? `0 0 10px ${st.color}55` : 'none' }} />
-                  <div style={{ paddingBottom: isLast ? '0' : '1rem', flex: 1 }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.5rem' }}>
-                      <span style={{ fontWeight: 700, color: i === 0 ? '#fff' : 'var(--text-secondary)', fontSize: '0.85rem' }}>{upd.location}</span>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <div 
+                    className="admin-order-tracking-dot" 
+                    style={{ 
+                      background: i === 0 ? st.color : 'var(--bg-dark)', 
+                      border: `2px solid ${st.color}`,
+                      boxShadow: i === 0 ? `0 0 10px ${st.color}55` : 'none'
+                    }} 
+                  />
+                  <div className="admin-order-tracking-body">
+                    <div className="admin-order-tracking-header">
+                      <span className={`admin-order-tracking-loc ${i === 0 ? 'active' : ''}`}>{upd.location}</span>
+                      <div className="admin-order-tracking-meta">
                         <StatusBadge status={upd.status} />
-                        <span style={{ color: 'var(--text-muted)', fontSize: '0.72rem' }}>
+                        <span className="admin-order-tracking-time">
                           {new Date(upd.timestamp).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
                         </span>
                       </div>
                     </div>
-                    {upd.note && <p style={{ color: 'var(--text-muted)', fontSize: '0.78rem', marginTop: '0.2rem' }}>{upd.note}</p>}
+                    {upd.note && <p className="admin-order-tracking-note">{upd.note}</p>}
                   </div>
                 </div>
               );
@@ -188,12 +196,12 @@ const OrderDetailPanel = ({ order, onClose }) => {
 
       {/* Cancelled info */}
       {isCancelled && order.cancelReason && (
-        <div style={{ marginTop: '1.25rem', background: 'rgba(239,68,68,0.05)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: '12px', padding: '1.1rem' }}>
+        <div className="admin-order-cancel-card">
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.6rem' }}>
             <AlertTriangle size={15} color="#ef4444" />
             <span style={{ fontWeight: 700, color: '#ef4444', fontSize: '0.88rem' }}>Order Cancelled</span>
           </div>
-          <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginBottom: '0.75rem' }}>
+          <p className="admin-order-info-label" style={{ marginBottom: '0.75rem' }}>
             <strong>Reason:</strong> {order.cancelReason}
           </p>
           <div style={{ display: 'flex', gap: '2rem', flexWrap: 'wrap' }}>
@@ -211,17 +219,17 @@ const OrderDetailPanel = ({ order, onClose }) => {
 
       {/* Add Tracking Update */}
       {!isCancelled && (
-        <div style={{ marginTop: '1.25rem', background: 'rgba(99,102,241,0.04)', border: '1px solid rgba(99,102,241,0.15)', borderRadius: '12px', padding: '1.1rem' }}>
-          <h4 style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--primary)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+        <div className="admin-order-form-panel">
+          <h4>
             <MapPin size={13} /> Push Location / Status Update
           </h4>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '0.75rem', marginBottom: '0.75rem' }}>
+          <div className="order-manage-fields" style={{ marginBottom: '0.75rem' }}>
             <input
               className="admin-input"
               placeholder="Location (e.g. Mumbai Distribution Hub)"
               value={trackLocation}
               onChange={(e) => setTrackLocation(e.target.value)}
-              style={{ height: '42px' }}
+              style={{ height: '42px', flex: 1 }}
             />
             <select
               className="order-status-select"
@@ -272,7 +280,7 @@ const OrderDetailPanel = ({ order, onClose }) => {
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: 'auto' }}
                 exit={{ opacity: 0, height: 0 }}
-                style={{ overflow: 'hidden', marginTop: '0.75rem' }}
+                style={{ overflow: 'hidden' }}
               >
                 <textarea
                   className="admin-input"
@@ -280,7 +288,7 @@ const OrderDetailPanel = ({ order, onClose }) => {
                   value={cancelReason}
                   onChange={(e) => setCancelReason(e.target.value)}
                   rows={3}
-                  style={{ width: '100%', resize: 'vertical', borderColor: 'rgba(239,68,68,0.3)', marginBottom: '0.6rem' }}
+                  style={{ width: '100%', resize: 'vertical', borderColor: 'rgba(239,68,68,0.3)', marginTop: '0.75rem', marginBottom: '0.6rem' }}
                 />
                 <button
                   onClick={handleCancel}
@@ -304,43 +312,49 @@ const OrderCard = ({ order, isOpen, onToggle }) => {
   const m = STATUS_META[order.status] || STATUS_META.pending;
 
   return (
-    <div style={{ borderRadius: '14px', overflow: 'hidden', border: `1px solid ${isOpen ? 'rgba(99,102,241,0.3)' : 'var(--border-color)'}`, background: isOpen ? 'rgba(99,102,241,0.03)' : 'rgba(255,255,255,0.01)', transition: 'all 0.25s ease' }}>
+    <div className={`admin-order-card ${isOpen ? 'expanded' : ''}`}>
       {/* Card Row */}
       <div
         onClick={onToggle}
-        style={{ display: 'grid', gridTemplateColumns: 'auto 1fr auto auto auto', alignItems: 'center', gap: '1.25rem', padding: '1.1rem 1.25rem', cursor: 'pointer', userSelect: 'none' }}
+        className="admin-order-card-header"
       >
         {/* Status dot + ID */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-          <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: m.color, boxShadow: `0 0 8px ${m.color}88`, flexShrink: 0 }} />
+        <div className="admin-order-card-identity">
+          <div 
+            className="admin-order-card-dot" 
+            style={{ 
+              background: m.color, 
+              boxShadow: `0 0 8px ${m.color}88` 
+            }} 
+          />
           <div>
-            <div style={{ fontFamily: 'monospace', fontWeight: 800, color: '#fff', fontSize: '0.9rem' }}>{order.id}</div>
-            <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '0.1rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+            <div className="admin-order-card-id-text">{order.id}</div>
+            <div className="admin-order-card-date">
               <Calendar size={10} /> {order.date}
             </div>
           </div>
         </div>
 
         {/* Customer */}
-        <div style={{ minWidth: 0 }}>
-          <div style={{ fontWeight: 600, color: '#fff', fontSize: '0.88rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{order.customerName}</div>
-          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{order.email}</div>
+        <div className="admin-order-card-customer">
+          <div className="admin-order-card-cust-name">{order.customerName}</div>
+          <div className="admin-order-card-cust-email">{order.email}</div>
         </div>
 
         {/* Items summary */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: 'var(--text-secondary)', fontSize: '0.8rem', minWidth: '80px' }}>
+        <div className="admin-order-card-items">
           <ShoppingBag size={13} color="var(--primary)" />
           {order.items.length} item{order.items.length !== 1 ? 's' : ''}
         </div>
 
         {/* Total + Status */}
-        <div style={{ textAlign: 'right' }}>
-          <div style={{ fontWeight: 800, color: '#fff', fontSize: '0.92rem' }}>{formatINR(order.total)}</div>
-          <div style={{ marginTop: '0.25rem' }}><StatusBadge status={order.status} /></div>
+        <div className="admin-order-card-summary">
+          <div className="admin-order-card-total">{formatINR(order.total)}</div>
+          <div className="admin-order-card-badge-box"><StatusBadge status={order.status} /></div>
         </div>
 
         {/* Expand arrow */}
-        <div style={{ color: isOpen ? 'var(--primary)' : 'var(--text-muted)', transition: 'transform 0.2s', transform: isOpen ? 'rotate(90deg)' : 'rotate(0deg)' }}>
+        <div className="admin-order-card-arrow">
           <ChevronRight size={18} />
         </div>
       </div>
@@ -348,7 +362,7 @@ const OrderCard = ({ order, isOpen, onToggle }) => {
       {/* Expanded Panel */}
       <AnimatePresence>
         {isOpen && (
-          <div style={{ padding: '0 1.25rem 1.25rem' }}>
+          <div className="admin-order-detail-wrapper">
             <OrderDetailPanel order={order} onClose={onToggle} />
           </div>
         )}
@@ -397,16 +411,16 @@ export const OrdersTab = () => {
           <h2>Order Management</h2>
           <p>Track, update, and manage all customer purchase orders from one place.</p>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+        <div className="admin-orders-stats-row">
           {/* Stats pill */}
-          <div style={{ background: 'rgba(99,102,241,0.1)', border: '1px solid rgba(99,102,241,0.2)', borderRadius: '8px', padding: '0.4rem 0.85rem', fontSize: '0.82rem', color: '#a5b4fc', fontWeight: 700 }}>
+          <div className="admin-orders-stats-pill">
             {orders.length} Total Orders
           </div>
         </div>
       </div>
 
       {/* Filter Bar */}
-      <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '1.25rem', padding: '0 0.25rem' }}>
+      <div className="admin-orders-filter-bar">
         {FILTERS.map(f => {
           const m = STATUS_META[f.key];
           const isActive = filterStatus === f.key;
@@ -414,22 +428,22 @@ export const OrdersTab = () => {
             <button
               key={f.key}
               onClick={() => setFilterStatus(f.key)}
-              style={{
-                padding: '0.4rem 1rem',
-                borderRadius: '20px',
-                border: isActive ? `1px solid ${m ? m.color : 'var(--primary)'}` : '1px solid var(--border-color)',
-                background: isActive ? (m ? m.bg : 'rgba(99,102,241,0.1)') : 'transparent',
-                color: isActive ? (m ? m.color : 'var(--primary)') : 'var(--text-secondary)',
-                fontWeight: isActive ? 700 : 500,
-                fontSize: '0.78rem',
-                cursor: 'pointer',
-                transition: 'all 0.2s',
-                display: 'flex', alignItems: 'center', gap: '0.4rem'
-              }}
+              className={`admin-filter-btn ${isActive ? 'active' : ''}`}
+              style={isActive && m ? {
+                borderColor: m.color,
+                background: m.bg,
+                color: m.color
+              } : {}}
             >
               {f.label}
               {f.count > 0 && (
-                <span style={{ background: isActive ? (m ? m.color : 'var(--primary)') : 'rgba(255,255,255,0.08)', color: isActive ? '#000' : 'var(--text-muted)', borderRadius: '10px', padding: '0 0.4rem', fontSize: '0.7rem', fontWeight: 700 }}>
+                <span 
+                  className="admin-filter-badge"
+                  style={isActive && m ? {
+                    background: m.color,
+                    color: '#000'
+                  } : {}}
+                >
                   {f.count}
                 </span>
               )}
@@ -439,28 +453,27 @@ export const OrdersTab = () => {
       </div>
 
       {/* Search */}
-      <div style={{ position: 'relative', marginBottom: '1.25rem' }}>
+      <div className="admin-orders-search-wrapper">
         <input
           className="admin-input"
           placeholder="Search by order ID, customer name, or email…"
           value={searchQuery}
           onChange={e => setSearchQuery(e.target.value)}
-          style={{ paddingLeft: '2.75rem', height: '44px' }}
         />
-        <Package size={16} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+        <Package size={16} />
       </div>
 
       {/* Orders List */}
       {filtered.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: '5rem 2rem', color: 'var(--text-muted)', background: 'rgba(255,255,255,0.01)', borderRadius: '14px', border: '1px solid var(--border-color)' }}>
-          <Package size={40} style={{ marginBottom: '1rem', opacity: 0.4 }} />
-          <p style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--text-secondary)' }}>No orders found</p>
-          <p style={{ fontSize: '0.85rem', marginTop: '0.35rem' }}>
+        <div className="admin-orders-empty-state">
+          <Package size={40} />
+          <p className="admin-orders-empty-state-title">No orders found</p>
+          <p className="admin-orders-empty-state-subtext">
             {searchQuery || filterStatus !== 'all' ? 'Try adjusting your filters.' : 'No customer purchases have been placed yet.'}
           </p>
         </div>
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+        <div className="admin-orders-list">
           {filtered.map(order => (
             <OrderCard
               key={order.id}

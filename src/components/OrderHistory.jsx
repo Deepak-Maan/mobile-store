@@ -130,14 +130,21 @@ export const OrderHistory = () => {
                 {/* Items Breakdown list */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem', marginBottom: '1.2rem' }}>
                   {order.items.map((item, idx) => (
-                    <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.88rem' }}>
-                      <span style={{ color: 'var(--text-secondary)' }}>
-                        <strong style={{ color: '#fff' }}>{item.name}</strong>
-                        <span style={{ color: 'var(--text-muted)', marginLeft: '0.4rem' }}>× {item.quantity}</span>
-                      </span>
-                      <span style={{ color: 'var(--text-secondary)', fontWeight: 600 }}>
-                        {formatINR(item.price * item.quantity)}
-                      </span>
+                    <div key={idx} style={{ display: 'flex', flexDirection: 'column', gap: '0.1rem', borderBottom: '1px solid rgba(255,255,255,0.02)', paddingBottom: '0.4rem', marginBottom: '0.4rem' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.88rem' }}>
+                        <span style={{ color: 'var(--text-secondary)' }}>
+                          <strong style={{ color: '#fff' }}>{item.name}</strong>
+                          <span style={{ color: 'var(--text-muted)', marginLeft: '0.4rem' }}>× {item.quantity}</span>
+                        </span>
+                        <span style={{ color: 'var(--text-secondary)', fontWeight: 600 }}>
+                          {formatINR(item.price * item.quantity)}
+                        </span>
+                      </div>
+                      {(item.storage || item.color) && (
+                        <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                          {item.storage || '128GB'} • {item.color || 'Obsidian Black'}
+                        </span>
+                      )}
                     </div>
                   ))}
                 </div>

@@ -5,7 +5,7 @@
       "name": "iPhone 15 Pro",
       "brand": "Apple",
       "price": 1,
-      "stock": 7,
+      "stock": 8,
       "description": "Experience the ultimate titanium design, featuring the groundbreaking A17 Pro chip, a customizable Action button, and the most powerful iPhone camera system ever.",
       "specs": {
         "display": "6.1\" Super Retina XDR OLED, 120Hz",
@@ -53,7 +53,7 @@
       "name": "Pixel 8 Pro",
       "brand": "Google",
       "price": 84915,
-      "stock": 2,
+      "stock": 18,
       "description": "The all-pro phone engineered by Google. It has the best of Google AI, the most advanced Pixel Camera ever, and can help you get more done, even faster.",
       "specs": {
         "display": "6.7\" Super Actua LTPO OLED, 120Hz",
@@ -239,6 +239,66 @@
         "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 200 300\" width=\"100%\" height=\"100%\">\n    <defs>\n      <linearGradient id=\"macro-dyn-263\" x1=\"0%\" y1=\"0%\" x2=\"100%\" y2=\"100%\"><stop offset=\"0%\" stop-color=\"#183f34\" /><stop offset=\"100%\" stop-color=\"#06120e\" /></linearGradient>\n    </defs>\n    <rect width=\"200\" height=\"300\" fill=\"url(#macro-dyn-263)\" />\n    \n      <circle cx=\"100\" cy=\"150\" r=\"82\" fill=\"#0e231d\" stroke=\"#3b7f6c\" stroke-width=\"3\" />\n      <circle cx=\"100\" cy=\"150\" r=\"50\" fill=\"#0a1710\" stroke=\"#040a08\" stroke-width=\"4\" />\n      <text x=\"100\" y=\"255\" fill=\"#ffffff\" opacity=\"0.6\" font-family=\"sans-serif\" font-weight=\"bold\" font-size=\"10\" text-anchor=\"middle\">1-INCH HYPER OPTICS</text>\n    \n  </svg>",
         "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 200 300\" width=\"100%\" height=\"100%\">\n    <defs>\n      <linearGradient id=\"life-bg-dyn-263\" x1=\"0%\" y1=\"100%\" x2=\"100%\" y2=\"0%\">\n        <stop offset=\"0%\" stop-color=\"#09090b\" /><stop offset=\"100%\" stop-color=\"#18181b\" />\n      </linearGradient>\n      <radialGradient id=\"glow-dyn-263\" cx=\"50%\" cy=\"50%\" r=\"50%\">\n        <stop offset=\"0%\" stop-color=\"var(--primary)\" opacity=\"0.15\" /><stop offset=\"100%\" stop-color=\"var(--primary)\" opacity=\"0\" />\n      </radialGradient>\n    </defs>\n    <rect width=\"200\" height=\"300\" fill=\"url(#life-bg-dyn-263)\" />\n    <circle cx=\"100\" cy=\"150\" r=\"120\" fill=\"url(#glow-dyn-263)\" />\n    <g transform=\"translate(100, 150) rotate(-30) scale(0.65)\">\n      <rect x=\"-50\" y=\"-80\" width=\"100\" height=\"160\" rx=\"16\" fill=\"none\" stroke=\"var(--primary)\" stroke-width=\"2\" opacity=\"0.7\" />\n      <rect x=\"-48\" y=\"-78\" width=\"96\" height=\"156\" rx=\"14\" fill=\"#0c0e12\" stroke=\"#000\" stroke-width=\"1\" />\n    </g>\n    <text x=\"100\" y=\"260\" fill=\"#fff\" opacity=\"0.5\" font-family=\"sans-serif\" font-weight=\"800\" font-size=\"9\" text-anchor=\"middle\" letter-spacing=\"1.5\">NEXT-GEN FLAGSHIP</text>\n  </svg>"
       ]
+    },
+    {
+      "id": "acc-case",
+      "name": "Aura Shield Case",
+      "brand": "Aura Accessories",
+      "price": 1499,
+      "stock": 50,
+      "description": "Glow-in-the-dark premium protective case engineered with shock-absorption defense ridges.",
+      "specs": {
+        "display": "N/A",
+        "processor": "N/A",
+        "ram": "N/A",
+        "storage": "N/A",
+        "camera": "N/A",
+        "battery": "N/A"
+      },
+      "featured": false,
+      "images": [
+        "<svg viewBox=\"0 0 200 300\" width=\"100%\" height=\"100%\" xmlns=\"http://www.w3.org/2000/svg\"><rect width=\"200\" height=\"300\" rx=\"20\" fill=\"#15151e\"/><rect x=\"25\" y=\"25\" width=\"150\" height=\"250\" rx=\"16\" fill=\"none\" stroke=\"#6366f1\" stroke-width=\"6\" opacity=\"0.3\"/><rect x=\"35\" y=\"35\" width=\"130\" height=\"230\" rx=\"12\" fill=\"none\" stroke=\"#a5b4fc\" stroke-width=\"1.5\"/><rect x=\"75\" y=\"60\" width=\"50\" height=\"50\" rx=\"8\" fill=\"#2a2a35\" stroke=\"rgba(255,255,255,0.1)\"/><circle cx=\"90\" cy=\"75\" r=\"8\" fill=\"#000\"/><circle cx=\"110\" cy=\"75\" r=\"8\" fill=\"#000\"/><circle cx=\"100\" cy=\"95\" r=\"6\" fill=\"#000\"/></svg>"
+      ]
+    },
+    {
+      "id": "acc-pods",
+      "name": "Aura Sound Pods",
+      "brand": "Aura Accessories",
+      "price": 4999,
+      "stock": 35,
+      "description": "High-Fidelity wireless sound pods featuring active noise cancellation and spatial audio.",
+      "specs": {
+        "display": "N/A",
+        "processor": "N/A",
+        "ram": "N/A",
+        "storage": "N/A",
+        "camera": "N/A",
+        "battery": "N/A"
+      },
+      "featured": false,
+      "images": [
+        "<svg viewBox=\"0 0 200 300\" width=\"100%\" height=\"100%\" xmlns=\"http://www.w3.org/2000/svg\"><rect width=\"200\" height=\"300\" rx=\"20\" fill=\"#15151e\"/><rect x=\"55\" y=\"80\" width=\"90\" height=\"90\" rx=\"25\" fill=\"#222\" stroke=\"#6366f1\" stroke-width=\"3\" /><circle cx=\"85\" cy=\"125\" r=\"14\" fill=\"#0f172a\" stroke=\"#a5b4fc\" stroke-width=\"1.5\"/><circle cx=\"115\" cy=\"125\" r=\"14\" fill=\"#0f172a\" stroke=\"#a5b4fc\" stroke-width=\"1.5\"/><path d=\"M 85 125 L 85 155\" stroke=\"#a5b4fc\" stroke-width=\"3\" stroke-linecap=\"round\"/><path d=\"M 115 125 L 115 155\" stroke=\"#a5b4fc\" stroke-width=\"3\" stroke-linecap=\"round\"/></svg>"
+      ]
+    },
+    {
+      "id": "acc-charger",
+      "name": "Aura Hyper Charger",
+      "brand": "Aura Accessories",
+      "price": 2499,
+      "stock": 40,
+      "description": "120W ultra-fast Gallium Nitride (GaN) charger capable of charging multi-device outputs.",
+      "specs": {
+        "display": "N/A",
+        "processor": "N/A",
+        "ram": "N/A",
+        "storage": "N/A",
+        "camera": "N/A",
+        "battery": "N/A"
+      },
+      "featured": false,
+      "images": [
+        "<svg viewBox=\"0 0 200 300\" width=\"100%\" height=\"100%\" xmlns=\"http://www.w3.org/2000/svg\"><rect width=\"200\" height=\"300\" rx=\"20\" fill=\"#15151e\"/><rect x=\"65\" y=\"90\" width=\"70\" height=\"90\" rx=\"10\" fill=\"#222\" stroke=\"#6366f1\" stroke-width=\"3\" /><rect x=\"85\" y=\"180\" width=\"6\" height=\"30\" rx=\"2\" fill=\"#e2e8f0\" /><rect x=\"109\" y=\"180\" width=\"6\" height=\"30\" rx=\"2\" fill=\"#e2e8f0\" /><path d=\"M 100 120 L 90 145 L 110 145 L 100 170\" fill=\"none\" stroke=\"#fbbf24\" stroke-width=\"3\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/></svg>"
+      ]
     }
   ],
   "users": [
@@ -268,7 +328,7 @@
       ],
       "total": 1,
       "date": "Jul 6, 2026",
-      "status": "shipped",
+      "status": "cancelled",
       "userEmail": "deepakmaan525@gmail.com",
       "paymentMethod": "upi",
       "utrNumber": "655349702265",
@@ -278,8 +338,17 @@
           "location": "rtret",
           "note": "ertre",
           "status": "shipped"
+        },
+        {
+          "timestamp": "2026-07-08T15:59:19.210Z",
+          "location": "Order Management",
+          "note": "Order cancelled. Reason: due to location cjhanfe",
+          "status": "cancelled"
         }
-      ]
+      ],
+      "cancelReason": "due to location cjhanfe",
+      "cancelledAt": "8 Jul 2026",
+      "refundDate": "15 Jul 2026"
     }
   ]
 }
