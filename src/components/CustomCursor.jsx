@@ -10,6 +10,8 @@ export const CustomCursor = () => {
 
   const mouseCoords = useRef({ x: 0, y: 0 });
   const ringCoords = useRef({ x: 0, y: 0 });
+  const prevMouseCoords = useRef({ x: 0, y: 0 });
+  const activeHoverTarget = useRef(null);
 
   useEffect(() => {
     const isMobile = window.matchMedia('(pointer: coarse)').matches;
@@ -31,9 +33,20 @@ export const CustomCursor = () => {
       if (!target) return;
       
       const isClickable = target.closest(
-        'a, button, select, input, textarea, [role="button"], .product-card, .faq-item, .modal-thumbnail-btn, .filter-btn, .sort-select, .bento-card, .stat-card, .testimonial-card'
+        'a, button, select, input, textarea, [role="button"], .product-card, .faq-item, .modal-thumbnail-btn, .filter-btn, .sort-select, .bento-card, .stat-card, .testimonial-card, .nav-btn, .nav-links a'
       );
+      
       setIsHovered(!!isClickable);
+
+      // Check if target is highly magnetic
+      const isMagnetic = target.closest(
+        '.nav-btn, .filter-btn, .card-btn, .add-to-cart-btn, #nav-user-menu-btn, .back-to-top-btn'
+      );
+      if (isMagnetic) {
+        activeHoverTarget.current = isMagnetic;
+      } else {
+        activeHoverTarget.current = null;
+      }
     };
 
     window.addEventListener('mousemove', handleMouseMove);
@@ -43,8 +56,10 @@ export const CustomCursor = () => {
     window.addEventListener('mouseup', handleMouseUp);
     window.addEventListener('mouseover', handleMouseOver);
 
-    // Simple smooth physics lag (lerp) loop
+    // Continuous spin tracker
+    let spinAngle = 0;
     let animFrame;
+
     const updateCursor = () => {
       const targetX = mouseCoords.current.x;
       const targetY = mouseCoords.current.y;
@@ -58,15 +73,54 @@ export const CustomCursor = () => {
         });
       }
 
-      // Outer ring lags behind with simple lerp
+      // Outer ring physics (velocity stretch, angle of movement, magnetic snap)
       if (ringRef.current) {
-        const lerpFactor = 0.15;
-        ringCoords.current.x += (targetX - ringCoords.current.x) * lerpFactor;
-        ringCoords.current.y += (targetY - ringCoords.current.y) * lerpFactor;
+        const dx = targetX - prevMouseCoords.current.x;
+        const dy = targetY - prevMouseCoords.current.y;
+        prevMouseCoords.current.x = targetX;
+        prevMouseCoords.current.y = targetY;
+
+        const speed = Math.sqrt(dx * dx + dy * dy);
+        const travelAngle = Math.atan2(dy, dx) * (180 / Math.PI);
+
+        let destX = targetX;
+        let destY = targetY;
+        let scaleX = 1;
+        let scaleY = 1;
+        let rotateAngle = spinAngle;
+
+        spinAngle = (spinAngle + 1.5) % 360;
+
+        if (activeHoverTarget.current) {
+          // Snap outer ring to target
+          const rect = activeHoverTarget.current.getBoundingClientRect();
+          destX = rect.left + rect.width / 2;
+          destY = rect.top + rect.height / 2;
+          
+          // Outer ring envelopes the clickable element slightly
+          scaleX = (rect.width + 12) / 28;
+          scaleY = (rect.height + 12) / 28;
+          rotateAngle = 0;
+        } else {
+          // Jelly speed stretching along travel angle
+          const maxStretch = 0.45;
+          const stretch = Math.min(speed / 90, maxStretch);
+          scaleX = 1 + stretch;
+          scaleY = 1 - stretch;
+          rotateAngle = travelAngle;
+        }
+
+        const lerpFactor = activeHoverTarget.current ? 0.22 : 0.14;
+        ringCoords.current.x += (destX - ringCoords.current.x) * lerpFactor;
+        ringCoords.current.y += (destY - ringCoords.current.y) * lerpFactor;
 
         gsap.set(ringRef.current, {
           x: ringCoords.current.x,
           y: ringCoords.current.y,
+          scaleX: scaleX,
+          scaleY: scaleY,
+          rotation: rotateAngle,
+          borderRadius: activeHoverTarget.current ? '10px' : '50%',
           overwrite: 'auto'
         });
       }
@@ -89,28 +143,35 @@ export const CustomCursor = () => {
     };
   }, [isVisible]);
 
-  // Adjust cursor scale on state changes (hover, click)
+  // Adjust cursor styling/scaling on state changes (hover, click)
   useEffect(() => {
     if (!isVisible || !ringRef.current || !dotRef.current) return;
 
-    let ringScale = 1;
+    let ringColor = 'rgba(255, 255, 255, 0.12)';
+    let ringBorderColor = 'var(--primary)';
     let ringOpacity = 0.75;
     let dotScale = 1;
+    let dotOpacity = 1;
 
     if (isHovered) {
-      ringScale = 1.5;
       ringOpacity = 0.45;
-      dotScale = 0.6;
+      dotScale = 0.5;
+      if (activeHoverTarget.current) {
+        ringColor = 'rgba(99, 102, 241, 0.08)';
+        ringBorderColor = 'rgba(99, 102, 241, 0.45)';
+        ringOpacity = 0.9;
+        dotOpacity = 0; // Hide inner dot when fully snapped for a clean look
+      }
     }
 
     if (isClicked) {
-      ringScale = 0.8;
       ringOpacity = 0.95;
-      dotScale = 1.3;
+      dotScale = 1.35;
     }
 
     gsap.to(ringRef.current, {
-      scale: ringScale,
+      borderColor: ringBorderColor,
+      backgroundColor: ringColor,
       opacity: ringOpacity,
       duration: 0.25,
       ease: 'power2.out',
@@ -119,6 +180,7 @@ export const CustomCursor = () => {
 
     gsap.to(dotRef.current, {
       scale: dotScale,
+      opacity: dotOpacity,
       duration: 0.2,
       ease: 'power2.out',
       overwrite: 'auto'
@@ -129,23 +191,21 @@ export const CustomCursor = () => {
 
   return (
     <>
-      {/* continuous subtle spinning animation for the outer ring notch */}
       <style>{`
-        @keyframes cursorSpin {
-          from { transform: translate(-50%, -50%) rotate(0deg); }
-          to   { transform: translate(-50%, -50%) rotate(360deg); }
+        .hide-native-cursor, .hide-native-cursor * {
+          cursor: none !important;
         }
         .simple-cursor-ring {
           position: absolute;
-          width: 26px;
-          height: 26px;
+          width: 28px;
+          height: 28px;
           border-radius: 50%;
-          /* Ring is solid with a distinct primary-colored top segment (notch) */
           border: 1.5px solid rgba(255, 255, 255, 0.12);
           border-top-color: var(--primary);
-          animation: cursorSpin 2.8s linear infinite;
-          box-shadow: 0 0 8px rgba(99, 102, 241, 0.15);
-          will-change: transform;
+          transform: translate(-50%, -50%);
+          box-shadow: 0 0 12px rgba(99, 102, 241, 0.15);
+          will-change: transform, width, height, border-radius;
+          pointer-events: none;
         }
         .simple-cursor-dot {
           position: absolute;
@@ -154,8 +214,9 @@ export const CustomCursor = () => {
           border-radius: 50%;
           background-color: var(--secondary);
           transform: translate(-50%, -50%);
-          box-shadow: 0 0 6px var(--primary-glow);
+          box-shadow: 0 0 8px var(--primary-glow);
           will-change: transform;
+          pointer-events: none;
         }
       `}</style>
 
@@ -170,7 +231,7 @@ export const CustomCursor = () => {
           transition: 'opacity 0.25s ease'
         }}
       >
-        {/* Lagging Ring with spinning border notch */}
+        {/* Lagging Ring with speed stretch and magnet snapping */}
         <div ref={ringRef} className="simple-cursor-ring" />
         
         {/* Precise Core Dot */}

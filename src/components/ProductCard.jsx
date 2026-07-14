@@ -35,6 +35,11 @@ export const ProductCard = ({ product }) => {
   const isOutOfStock = product.stock === 0;
 
   const cardRef = React.useRef(null);
+  const [rotateX, setRotateX] = React.useState(0);
+  const [rotateY, setRotateY] = React.useState(0);
+  const [glareX, setGlareX] = React.useState(50);
+  const [glareY, setGlareY] = React.useState(50);
+  const [isHovered, setIsHovered] = React.useState(false);
 
   const handleMouseMove = (e) => {
     const card = cardRef.current;
@@ -42,25 +47,61 @@ export const ProductCard = ({ product }) => {
     const rect = card.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
+    
+    // Scale down tilt rotation for smooth motion
+    const rotateXVal = ((y / rect.height) - 0.5) * -12;
+    const rotateYVal = ((x / rect.width) - 0.5) * 12;
+    
+    setRotateX(rotateXVal);
+    setRotateY(rotateYVal);
+    setGlareX((x / rect.width) * 100);
+    setGlareY((y / rect.height) * 100);
+    setIsHovered(true);
+
     card.style.setProperty('--mouse-x', `${x}px`);
     card.style.setProperty('--mouse-y', `${y}px`);
+  };
+
+  const handleMouseLeave = () => {
+    setRotateX(0);
+    setRotateY(0);
+    setIsHovered(false);
   };
 
   return (
     <motion.article 
       ref={cardRef}
       onMouseMove={handleMouseMove}
+      onMouseLeave={handleMouseLeave}
       layout
+      style={{
+        transformStyle: 'preserve-3d',
+        transform: `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg)`,
+        transition: isHovered ? 'none' : 'transform 0.45s ease-out',
+      }}
       whileHover={{ 
         y: -7, 
         backgroundColor: 'var(--bg-card-hover)',
         borderColor: 'rgba(255, 255, 255, 0.15)',
         boxShadow: '0 15px 40px rgba(0, 0, 0, 0.8)'
       }}
-      transition={{ type: 'spring', stiffness: 350, damping: 25 }}
       className="product-card" 
       id={`card-${product.id}`}
     >
+      {/* Glare shine layer */}
+      <div 
+        style={{
+          position: 'absolute',
+          inset: 0,
+          background: `radial-gradient(circle 200px at ${glareX}% ${glareY}%, rgba(255, 255, 255, 0.09), transparent 75%)`,
+          pointerEvents: 'none',
+          zIndex: 9,
+          borderRadius: 'inherit',
+          mixBlendMode: 'overlay',
+          opacity: isHovered ? 1 : 0,
+          transition: 'opacity 0.25s ease'
+        }}
+      />
       <div className="card-img-wrapper" style={{ position: 'relative' }}>
         <ProductImage src={product.images[0]} alt={product.name} />
         

@@ -37,8 +37,7 @@ import { UniverseHeroReveal } from './components/UniverseHeroReveal';
 import { SpotlightCarousel } from './components/SpotlightCarousel';
 import { DeviceExploder } from './components/DeviceExploder';
 import { CameraLensZoom } from './components/CameraLensZoom';
-
-
+import { ParallaxShowcase } from './components/ParallaxShowcase';
 
 function App() {
   const { currentView, isAdminLoggedIn, compareIds } = useStore();
@@ -101,7 +100,8 @@ function App() {
                 <FeaturesSection />
                 <RecentlyViewedBar />
                 <Catalog />
-              <SpotlightCarousel />
+                <ParallaxShowcase />
+                <SpotlightCarousel />
               <DeviceExploder />
               <AccessoryBuilder />
               <StatsSection />

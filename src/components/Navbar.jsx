@@ -7,6 +7,7 @@ import {
   Truck, LayoutGrid
 } from 'lucide-react';
 import { SmartSearch } from './SmartSearch';
+import gsap from 'gsap';
 
 export const Navbar = ({ onOpenCart, onOpenAuth, onOpenWishlist }) => {
   const {
@@ -17,6 +18,54 @@ export const Navbar = ({ onOpenCart, onOpenAuth, onOpenWishlist }) => {
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const menuRef = useRef(null);
   const totalQty = cart.reduce((acc, curr) => acc + curr.quantity, 0);
+
+  const handleThemeToggle = (e) => {
+    // 1. Get exact position of click
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = rect.left + rect.width / 2;
+    const y = rect.top + rect.height / 2;
+
+    // 2. Compute screen coverage radius
+    const maxRadius = Math.hypot(
+      Math.max(x, window.innerWidth - x),
+      Math.max(y, window.innerHeight - y)
+    );
+
+    // 3. Create absolute overlay div representing new theme state
+    const overlay = document.createElement('div');
+    overlay.style.position = 'fixed';
+    overlay.style.top = '0';
+    overlay.style.left = '0';
+    overlay.style.width = '100vw';
+    overlay.style.height = '100vh';
+    overlay.style.pointerEvents = 'none';
+    overlay.style.zIndex = '999999';
+
+    // Solid background color of the new incoming theme
+    const nextTheme = theme === 'dark' ? 'light' : 'dark';
+    overlay.style.background = nextTheme === 'light' ? '#f8fafc' : '#0a0a0e';
+
+    document.body.appendChild(overlay);
+
+    // 4. Animate overlay out radially using GSAP clipPath
+    gsap.timeline({
+      onComplete: () => {
+        // Toggle context theme
+        toggleTheme();
+        
+        // Smoothly fade out overlay after state finishes updating
+        gsap.to(overlay, {
+          opacity: 0,
+          duration: 0.2,
+          onComplete: () => overlay.remove()
+        });
+      }
+    })
+    .fromTo(overlay,
+      { clipPath: `circle(0px at ${x}px ${y}px)` },
+      { clipPath: `circle(${maxRadius}px at ${x}px ${y}px)`, duration: 0.65, ease: 'power2.inOut' }
+    );
+  };
 
   // Lock body scroll when dropdown is open
   useEffect(() => {
@@ -82,10 +131,9 @@ export const Navbar = ({ onOpenCart, onOpenAuth, onOpenWishlist }) => {
             </div>
           ) : (
             <>
-              {/* Theme */}
               <motion.button 
                 className="nav-btn theme-toggle" 
-                onClick={toggleTheme}
+                onClick={handleThemeToggle}
                 whileHover={{ scale: 1.08 }}
                 whileTap={{ scale: 0.95 }}
                 style={{ 

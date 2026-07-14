@@ -251,9 +251,56 @@ const Badge = ({ label, value, color, delay }) => (
 );
 
 /* ─── Main Hero ─── */
+import { WebGLDisplacementSlider } from './WebGLDisplacementSlider';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
+
+const HERO_SLIDES = [
+  {
+    name: "iPhone 15 Pro",
+    brand: "Apple",
+    color: "#6366f1",
+    description: "Experience the premium titanium chassis design, featuring the desktop-class A17 Pro chip and customizable Action button.",
+    image: "/images/iphone_15_pro.png",
+    specs: { badge1: "A17 Pro", label1: "3nm CPU", badge2: "48MP", label2: "Pro Lens", badge3: "Titanium", label3: "Case" }
+  },
+  {
+    name: "Galaxy S24 Ultra",
+    brand: "Samsung",
+    color: "#ec4899",
+    description: "Unleash whole new levels of mobile AI creativity, productivity, and detail precision with the built-in S-Pen and 200MP sensor.",
+    image: "/images/galaxy_s24_ultra.png",
+    specs: { badge1: "Snapdragon 8G3", label1: "AI Core", badge2: "200MP", label2: "Quad Cam", badge3: "5000mAh", label3: "Battery" }
+  },
+  {
+    name: "Pixel 8 Pro",
+    brand: "Google",
+    color: "#eab308",
+    description: "Google Tensor G3 power enables cutting-edge photo editing features like Magic Eraser and Best Take with natural studio skin tones.",
+    image: "/images/pixel_8_pro.png",
+    specs: { badge1: "Tensor G3", label1: "Google AI", badge2: "48MP", label2: "Telephoto", badge3: "7 Years", label3: "Updates" }
+  },
+  {
+    name: "OnePlus 12",
+    brand: "OnePlus",
+    color: "#10b981",
+    description: "Boasts a blistering 100W SUPERVOOC charging speed, 4th Gen Hasselblad optics, and a stunning 2K 4500-nit ProXDR display.",
+    image: "/images/oneplus_12.png",
+    specs: { badge1: "100W", label1: "SuperVOOC", badge2: "Hasselblad", label2: "Color", badge3: "16GB RAM", label3: "Standard" }
+  },
+  {
+    name: "Xiaomi 14 Ultra",
+    brand: "Xiaomi",
+    color: "#a855f7",
+    description: "Unprecedented Leica Summilux lens system featuring a 1-inch sensor size and dynamic stepless variable aperture mechanism.",
+    image: "/images/xiaomi_14_ultra.png",
+    specs: { badge1: "Leica Optic", label1: "1\" Sensor", badge2: "120W", label2: "HyperCharge", badge3: "W2 Ceramic", label3: "Glass" }
+  }
+];
+
+/* ─── Main Hero ─── */
 export const Hero = ({ onExplore }) => {
   const containerRef = useRef(null);
-  const phoneRef     = useRef(null);
+  const [activeIndex, setActiveIndex] = useState(0);
 
   // Scroll parallax
   const { scrollYProgress } = useScroll({
@@ -268,38 +315,34 @@ export const Hero = ({ onExplore }) => {
   const phoneScale= useTransform(scrollYProgress, [0, 0.6], [1, 0.88]);
   const badgesY   = useTransform(scrollYProgress, [0, 1], ['0px',  '40px']);
 
-  // Cursor-tracked 3D phone tilt
-  const rawX = useMotionValue(0);
-  const rawY = useMotionValue(0);
-  const rotY = useSpring(rawX, { stiffness: 80, damping: 20 });
-  const rotX = useSpring(rawY, { stiffness: 80, damping: 20 });
-
-  useEffect(() => {
-    const onMove = (e) => {
-      const el = containerRef.current;
-      if (!el) return;
-      const r  = el.getBoundingClientRect();
-      const cx = r.left + r.width  / 2;
-      const cy = r.top  + r.height / 2;
-      rawX.set(((e.clientX - cx) / r.width)  *  18);
-      rawY.set(((e.clientY - cy) / r.height) * -12);
-    };
-    const onLeave = () => { rawX.set(0); rawY.set(0); };
-    window.addEventListener('mousemove', onMove);
-    window.addEventListener('mouseleave', onLeave);
-    return () => {
-      window.removeEventListener('mousemove', onMove);
-      window.removeEventListener('mouseleave', onLeave);
-    };
-  }, [rawX, rawY]);
-
-  // Mobile idle float
+  // Mobile check
   const [isMobile, setIsMobile] = useState(false);
   useEffect(() => {
     const c = () => setIsMobile(window.innerWidth < 768);
     c(); window.addEventListener('resize', c);
     return () => window.removeEventListener('resize', c);
   }, []);
+
+  // Slide navigation
+  const handlePrev = (e) => {
+    createRipple(e);
+    setActiveIndex(prev => (prev - 1 + HERO_SLIDES.length) % HERO_SLIDES.length);
+  };
+
+  const handleNext = (e) => {
+    createRipple(e);
+    setActiveIndex(prev => (prev + 1) % HERO_SLIDES.length);
+  };
+
+  // Autoplay slides
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setActiveIndex(prev => (prev + 1) % HERO_SLIDES.length);
+    }, 5500);
+    return () => clearInterval(timer);
+  }, []);
+
+  const activeSlide = HERO_SLIDES[activeIndex];
 
   return (
     <div
@@ -389,8 +432,8 @@ export const Hero = ({ onExplore }) => {
           >
             <span style={{
               width: '6px', height: '6px', borderRadius: '50%',
-              background: '#818cf8',
-              boxShadow: '0 0 6px #818cf8',
+              background: activeSlide.color,
+              boxShadow: `0 0 6px ${activeSlide.color}`,
               flexShrink: 0,
             }} />
             <span style={{
@@ -398,55 +441,66 @@ export const Hero = ({ onExplore }) => {
               color: '#a5b4fc', letterSpacing: '1.5px',
               textTransform: 'uppercase',
             }}>
-              2025 Collection · Now Live
+              {activeSlide.brand} · Flagship Performance
             </span>
           </motion.div>
 
           {/* Headline */}
           <div style={{ overflow: 'hidden', marginBottom: isMobile ? '1rem' : '1.25rem' }}>
-            <motion.h1
-              initial={{ y: 80 }}
-              animate={{ y: 0 }}
-              transition={{ delay: 0.15, duration: 0.9, ease: [0.16, 1, 0.3, 1] }}
-              style={{
-                fontSize: isMobile
-                  ? 'clamp(2.2rem, 11vw, 3rem)'
-                  : 'clamp(3rem, 5.5vw, 5rem)',
-                fontWeight: 900,
-                lineHeight: 1.0,
-                letterSpacing: isMobile ? '-2px' : '-3px',
-                color: '#fff',
-                margin: 0,
-              }}
-            >
-              Next-Gen
-              <br />
-              <span style={{
-                background: 'linear-gradient(135deg, #818cf8 0%, #c084fc 40%, #f472b6 100%)',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-                display: 'inline-block',
-              }}>
-                Smartphones
-              </span>
-            </motion.h1>
+            <AnimatePresence mode="wait">
+              <motion.h1
+                key={activeIndex}
+                initial={{ y: 50, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                exit={{ y: -50, opacity: 0 }}
+                transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
+                style={{
+                  fontSize: isMobile
+                    ? 'clamp(2.2rem, 11vw, 3rem)'
+                    : 'clamp(3rem, 5.5vw, 4.8rem)',
+                  fontWeight: 900,
+                  lineHeight: 1.0,
+                  letterSpacing: isMobile ? '-1.5px' : '-2.5px',
+                  color: '#fff',
+                  margin: 0,
+                }}
+              >
+                {activeSlide.name.split(' ')[0]}
+                <br />
+                <span style={{
+                  background: `linear-gradient(135deg, ${activeSlide.color} 0%, #c084fc 60%, #f472b6 100%)`,
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                  display: 'inline-block',
+                }}>
+                  {activeSlide.name.split(' ').slice(1).join(' ')}
+                </span>
+              </motion.h1>
+            </AnimatePresence>
           </div>
 
           {/* Subtext */}
-          <motion.p
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.35, duration: 0.7, ease: 'easeOut' }}
-            style={{
-              fontSize: isMobile ? '0.88rem' : '1.05rem',
-              color: 'rgba(255,255,255,0.5)',
-              lineHeight: 1.65,
-              maxWidth: '460px',
-              marginBottom: isMobile ? '2rem' : '2.5rem',
-            }}
-          >
-            Discover the world's finest flagship smartphones — engineered with cutting-edge chips, pro-grade cameras &amp; all-day batteries.
-          </motion.p>
+          <div style={{ minHeight: isMobile ? '70px' : '90px' }}>
+            <AnimatePresence mode="wait">
+              <motion.p
+                key={activeIndex}
+                initial={{ opacity: 0, y: 15 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -15 }}
+                transition={{ duration: 0.4 }}
+                style={{
+                  fontSize: isMobile ? '0.88rem' : '1.02rem',
+                  color: 'rgba(255,255,255,0.5)',
+                  lineHeight: 1.6,
+                  maxWidth: '460px',
+                  margin: 0,
+                  marginBottom: isMobile ? '1.8rem' : '2.2rem',
+                }}
+              >
+                {activeSlide.description}
+              </motion.p>
+            </AnimatePresence>
+          </div>
 
           {/* CTAs */}
           <motion.div
@@ -523,53 +577,92 @@ export const Hero = ({ onExplore }) => {
           </motion.div>
 
           {/* Stat badges */}
-          <motion.div
-            style={{ y: badgesY, marginTop: isMobile ? '2rem' : '2.5rem', display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}
-          >
-            <Badge label="Brands"       value="50+"      color="#818cf8" delay={0.6} />
-            <Badge label="Happy Buyers" value="2.4M+"    color="#f472b6" delay={0.7} />
-            <Badge label="Rating"       value="4.9 ★"    color="#fbbf24" delay={0.8} />
-          </motion.div>
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={activeIndex}
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -15 }}
+              transition={{ duration: 0.35 }}
+              style={{ y: badgesY, marginTop: isMobile ? '2rem' : '2.5rem', display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}
+            >
+              <Badge label={activeSlide.specs.label1} value={activeSlide.specs.badge1} color={activeSlide.color} delay={0.1} />
+              <Badge label={activeSlide.specs.label2} value={activeSlide.specs.badge2} color="#f472b6" delay={0.2} />
+              <Badge label={activeSlide.specs.label3} value={activeSlide.specs.badge3} color="#fbbf24" delay={0.3} />
+            </motion.div>
+          </AnimatePresence>
         </motion.div>
 
-        {/* ── Right: 3D Phone ── */}
+        {/* ── Right: WebGL Displacement Phone Slider ── */}
         <motion.div
-          style={{ y: phoneY, scale: phoneScale }}
+          style={{ y: phoneY, scale: phoneScale, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1.25rem' }}
           initial={{ opacity: 0, y: 40 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.25, duration: 1.0, ease: [0.16, 1, 0.3, 1] }}
         >
-          {isMobile ? (
-            /* Mobile: auto-floating idle animation, no cursor tilt */
-            <motion.div
-              animate={{ y: [0, -14, 0], rotateY: [0, 6, 0, -6, 0] }}
-              transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut' }}
-              style={{ transformStyle: 'preserve-3d', perspective: '1000px' }}
-            >
-              <PhoneMockup rotX={0} rotY={0} />
-            </motion.div>
-          ) : (
-            /* Desktop: cursor-tracked 3D tilt */
-            <motion.div
-              ref={phoneRef}
-              style={{ perspective: '900px', transformStyle: 'preserve-3d' }}
-            >
-              <PhoneMockup rotX={rotX} rotY={rotY} />
-            </motion.div>
-          )}
+          <div style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
+            {/* Prev Arrow */}
+            {!isMobile && (
+              <button
+                onClick={handlePrev}
+                style={{
+                  background: 'rgba(255,255,255,0.04)',
+                  border: '1px solid rgba(255,255,255,0.08)',
+                  width: '42px', height: '42px', borderRadius: '50%',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  cursor: 'pointer', color: '#fff', zIndex: 10,
+                  transition: 'background 0.2s, transform 0.2s'
+                }}
+                onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.08)'; e.currentTarget.style.transform = 'scale(1.06)'; }}
+                onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.04)'; e.currentTarget.style.transform = 'scale(1)'; }}
+              >
+                <ChevronLeft size={20} />
+              </button>
+            )}
 
-          {/* Glow ring under phone */}
-          <motion.div
-            animate={{ scale: [1, 1.08, 1], opacity: [0.35, 0.55, 0.35] }}
-            transition={{ duration: 3.5, repeat: Infinity, ease: 'easeInOut' }}
-            style={{
-              margin: '-10px auto 0',
-              width: '140px', height: '24px',
-              background: 'radial-gradient(ellipse, rgba(129,140,248,0.55) 0%, transparent 70%)',
-              filter: 'blur(12px)',
-              borderRadius: '50%',
-            }}
-          />
+            {/* WebGL Canvas */}
+            <WebGLDisplacementSlider activeIndex={activeIndex} slides={HERO_SLIDES} isMobile={isMobile} />
+
+            {/* Next Arrow */}
+            {!isMobile && (
+              <button
+                onClick={handleNext}
+                style={{
+                  background: 'rgba(255,255,255,0.04)',
+                  border: '1px solid rgba(255,255,255,0.08)',
+                  width: '42px', height: '42px', borderRadius: '50%',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  cursor: 'pointer', color: '#fff', zIndex: 10,
+                  transition: 'background 0.2s, transform 0.2s'
+                }}
+                onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.08)'; e.currentTarget.style.transform = 'scale(1.06)'; }}
+                onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.04)'; e.currentTarget.style.transform = 'scale(1)'; }}
+              >
+                <ChevronRight size={20} />
+              </button>
+            )}
+          </div>
+
+          {/* Dots Indicator */}
+          <div style={{ display: 'flex', gap: '0.6rem', justifyContent: 'center' }}>
+            {HERO_SLIDES.map((_, idx) => (
+              <button
+                key={idx}
+                onClick={(e) => { createRipple(e); setActiveIndex(idx); }}
+                style={{
+                  width: activeIndex === idx ? '24px' : '8px',
+                  height: '8px',
+                  borderRadius: '99px',
+                  background: activeIndex === idx ? activeSlide.color : 'rgba(255,255,255,0.18)',
+                  border: 'none',
+                  cursor: 'pointer',
+                  padding: 0,
+                  transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
+                  boxShadow: activeIndex === idx ? `0 0 6px ${activeSlide.color}` : 'none'
+                }}
+              />
+            ))}
+          </div>
         </motion.div>
       </div>
 
