@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useStore } from '../context/StoreContext';
 import { User, CreditCard, Check, LogIn } from 'lucide-react';
-import { formatINR, toINR } from '../utils/currency';
+import { formatINR } from '../utils/currency';
 
 export const Checkout = ({ onOpenAuth }) => {
   const { cart, products, processOrder, currentUser, addToast } = useStore();
@@ -91,7 +91,7 @@ export const Checkout = ({ onOpenAuth }) => {
     setForm((prev) => ({ ...prev, [propName]: value }));
   };
 
-  const triggerUpiApp = (appName) => {
+  const triggerUpiApp = (_appName) => {
     const totalInINR = subtotal;
     const upiUrl = `upi://pay?pa=princejaat07@fam&pn=MobileStore&am=${totalInINR}&cu=INR&tn=Order%20Payment`;
     

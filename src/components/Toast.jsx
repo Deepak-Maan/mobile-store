@@ -17,7 +17,7 @@ export const ToastContainer = () => {
   );
 };
 
-const ToastItem = ({ toast, onRemove }) => {
+const ToastItem = ({ toast, onRemove: _onRemove }) => {
   return (
     <motion.div
       layout

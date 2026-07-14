@@ -27,6 +27,16 @@ import { WishlistDrawer } from './components/WishlistDrawer';
 import { ComparisonConsole } from './components/ComparisonConsole';
 import { SalesTicker } from './components/SalesTicker';
 import { AccessoryBuilder } from './components/AccessoryBuilder';
+import { BackToTop } from './components/BackToTop';
+import { CartFlyProvider } from './components/CartFlyAnimation';
+import { RecentlyViewedBar } from './components/RecentlyViewedBar';
+import { FlashSaleBanner } from './components/FlashSaleBanner';
+
+// 3D Parallax & Depth Sections
+import { UniverseHeroReveal } from './components/UniverseHeroReveal';
+import { SpotlightCarousel } from './components/SpotlightCarousel';
+import { DeviceExploder } from './components/DeviceExploder';
+import { CameraLensZoom } from './components/CameraLensZoom';
 
 
 
@@ -56,37 +66,46 @@ function App() {
   };
 
   return (
-    <div className="app-shell" style={{ position: 'relative', minHeight: '100vh' }}>
-      {/* Global Interactive Elements */}
-      <InteractiveBackground />
-      <CustomCursor />
+    <CartFlyProvider>
+      <div className="app-shell" style={{ position: 'relative', minHeight: '100vh' }}>
+        {/* Flash Sale Countdown Banner */}
+        <FlashSaleBanner />
 
-      {/* Dynamic Toast Alerts Stack */}
-      <ToastContainer />
+        {/* Global Interactive Elements */}
+        <InteractiveBackground />
+        <CustomCursor />
 
-      {/* Global Navigation Bar */}
-      <Navbar 
-        onOpenCart={() => setIsCartOpen(true)} 
-        onOpenAuth={() => setIsAuthOpen(true)}
-        onOpenWishlist={() => setIsWishlistOpen(true)}
-      />
+        {/* Dynamic Toast Alerts Stack */}
+        <ToastContainer />
 
-      {/* Main View Router */}
-      <main style={{ position: 'relative', overflow: 'hidden' }}>
-        <AnimatePresence mode="wait">
-          {currentView === 'storefront' && (
-            <motion.div
-              key="storefront"
-              initial={{ opacity: 0, y: 15 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -15 }}
-              transition={{ duration: 0.4, ease: 'easeOut' }}
-            >
-              <Hero onExplore={handleExploreClick} />
-              <FeaturesSection />
-              <Catalog />
+        {/* Global Navigation Bar */}
+        <Navbar 
+          onOpenCart={() => setIsCartOpen(true)} 
+          onOpenAuth={() => setIsAuthOpen(true)}
+          onOpenWishlist={() => setIsWishlistOpen(true)}
+        />
+
+        {/* Main View Router */}
+        <main style={{ position: 'relative', overflow: 'hidden' }}>
+          <AnimatePresence mode="wait">
+            {currentView === 'storefront' && (
+              <motion.div
+                key="storefront"
+                initial={{ opacity: 0, y: 15 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -15 }}
+                transition={{ duration: 0.4, ease: 'easeOut' }}
+              >
+                <Hero onExplore={handleExploreClick} />
+                <UniverseHeroReveal />
+                <FeaturesSection />
+                <RecentlyViewedBar />
+                <Catalog />
+              <SpotlightCarousel />
+              <DeviceExploder />
               <AccessoryBuilder />
               <StatsSection />
+              <CameraLensZoom />
               <Faq />
             </motion.div>
           )}
@@ -202,14 +221,18 @@ function App() {
         </button>
       )}
 
-      {/* Global Footer */}
-      {currentView !== 'admin' && currentView !== 'checkout' && (
-        <Footer 
-          onOpenCart={() => setIsCartOpen(true)} 
-          onOpenAuth={() => setIsAuthOpen(true)} 
-        />
-      )}
-    </div>
+      {/* Back to Top Button */}
+      <BackToTop compareActive={compareIds.length > 0 && currentView === 'storefront'} />
+
+        {/* Global Footer */}
+        {currentView !== 'admin' && currentView !== 'checkout' && (
+          <Footer 
+            onOpenCart={() => setIsCartOpen(true)} 
+            onOpenAuth={() => setIsAuthOpen(true)} 
+          />
+        )}
+      </div>
+    </CartFlyProvider>
   );
 }
 

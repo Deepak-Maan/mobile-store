@@ -42,7 +42,7 @@ export const Catalog = () => {
     if (searchQuery === '' && localSearch !== '') {
       setLocalSearch('');
     }
-  }, [searchQuery]);
+  }, [searchQuery, localSearch]);
 
   const brands = ['All', 'Apple', 'Samsung', 'Google', 'OnePlus', 'Xiaomi'];
 

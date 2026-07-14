@@ -7,6 +7,8 @@ import { Phone360Viewer } from './360Viewer';
 import { RecommendedSection } from './RecommendedSection';
 import gsap from 'gsap';
 import { formatINR } from '../utils/currency';
+import { useCartFly } from './CartFlyAnimation';
+import { createRipple } from '../utils/ripple';
 
 const adjustSvgColors = (svgString, colorName) => {
   if (!svgString || !colorName || !svgString.trim().startsWith('<svg')) return svgString;
@@ -91,7 +93,7 @@ export const ProductModal = () => {
         { opacity: 1, scale: 1, y: 0, rotate: 0, duration: 0.55, ease: 'back.out(1.5)' }
       );
     }
-  }, [currentImageIndex, selectedProductId]);
+  }, [currentImageIndex, selectedProductId, phone]);
 
   const handleClose = (e) => {
     if (e.target.id === 'product-modal-overlay' || e.currentTarget.id === 'close-modal-btn') {
@@ -99,10 +101,18 @@ export const ProductModal = () => {
     }
   };
 
-  const handleAddAndClose = () => {
+  const { triggerFly } = useCartFly();
+
+  const handleAddAndClose = (e) => {
     if (phone) {
+      createRipple(e);
+      triggerFly(e, phone.images[0]);
       addToCart(phone.id, { storage: selectedStorage, color: selectedColor });
-      setSelectedProductId(null);
+      
+      // Delay closing modal slightly so fly animation is visible from the modal button origin
+      setTimeout(() => {
+        setSelectedProductId(null);
+      }, 180);
     }
   };
 
@@ -275,6 +285,43 @@ export const ProductModal = () => {
                 <span className="modal-brand">{phone.brand}</span>
                 <h2 className="modal-name">{phone.name}</h2>
                 <span className="modal-price">{formatINR(finalPrice)}</span>
+                
+                {/* EMI Options Calculator */}
+                <div style={{
+                  background: 'rgba(99, 102, 241, 0.06)',
+                  border: '1px solid rgba(99, 102, 241, 0.15)',
+                  borderRadius: '12px',
+                  padding: '0.75rem 0.9rem',
+                  marginTop: '0.5rem',
+                  marginBottom: '0.85rem'
+                }}>
+                  <div style={{ fontSize: '0.68rem', color: '#818cf8', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '0.4rem' }}>
+                    EMI Options
+                  </div>
+                  <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                    {[6, 12, 24].map(months => {
+                      const emi = Math.ceil(finalPrice / months);
+                      return (
+                        <div key={months} style={{
+                          flex: 1,
+                          minWidth: '76px',
+                          background: 'rgba(99, 102, 241, 0.08)',
+                          border: '1px solid rgba(99, 102, 241, 0.12)',
+                          borderRadius: '8px',
+                          padding: '0.35rem 0.45rem',
+                          textAlign: 'center',
+                        }}>
+                          <div style={{ fontSize: '0.62rem', color: 'rgba(255,255,255,0.4)' }}>{months} mo.</div>
+                          <div style={{ fontSize: '0.82rem', fontWeight: 800, color: '#fff', marginTop: '0.05rem' }}>₹{emi.toLocaleString('en-IN')}/mo</div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <div style={{ fontSize: '0.58rem', color: 'rgba(255,255,255,0.3)', marginTop: '0.4rem' }}>
+                    *0% interest EMI options available on major credit cards
+                  </div>
+                </div>
+
                 <p className="modal-desc">{phone.description}</p>
                 
                 {/* Configuration Panel */}
@@ -363,7 +410,7 @@ export const ProductModal = () => {
                   </div>
                   <button 
                     className="modal-buy-btn" 
-                    onClick={handleAddAndClose} 
+                    onClick={(e) => handleAddAndClose(e)} 
                     disabled={phone.stock === 0}
                   >
                     <ShoppingCart width="18" height="18" strokeWidth={2.5} />

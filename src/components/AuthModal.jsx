@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useStore } from '../context/StoreContext';
-import { X, Lock, Mail, User } from 'lucide-react';
+import { X, Lock, Mail } from 'lucide-react';
 
 export const AuthModal = ({ isOpen, onClose }) => {
   const { signUpUser, loginUser } = useStore();

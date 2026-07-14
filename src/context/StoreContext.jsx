@@ -13,8 +13,13 @@ export const StoreProvider = ({ children }) => {
   const [orders, setOrders] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [wishlist, setWishlist] = useState([]);
-  const [theme, setTheme] = useState('dark');
+  const [theme, setTheme] = useState(() => localStorage.getItem('aura_theme') || 'dark');
   const [compareIds, setCompareIds] = useState([]);
+  const [recentlyViewed, setRecentlyViewed] = useState([]);
+  const [savedForLater, setSavedForLater] = useState(() => {
+    const stored = localStorage.getItem('mobile_store_saved_for_later');
+    return stored ? JSON.parse(stored) : [];
+  });
   
   const warnedLowStockRef = useRef(new Set());
   
@@ -22,6 +27,49 @@ export const StoreProvider = ({ children }) => {
   const [registeredUsers, setRegisteredUsers] = useState([]);
   const [currentUser, setCurrentUser] = useState(null);
   const [isAdminLoggedIn, setIsAdminLoggedIn] = useState(false);
+  const [userToken, setUserToken] = useState(null);
+  const [adminToken, setAdminToken] = useState(null);
+
+  const handleAuthFailure = () => {
+    const isUser = !!sessionStorage.getItem('mobile_store_active_user');
+    const isAdmin = !!sessionStorage.getItem('mobile_store_admin_active');
+    
+    if (isUser) {
+      setCurrentUser(null);
+      setUserToken(null);
+      sessionStorage.removeItem('mobile_store_active_user');
+      sessionStorage.removeItem('mobile_store_user_token');
+      addToast('Session expired. Please log in again.', 'error');
+    }
+    if (isAdmin) {
+      setIsAdminLoggedIn(false);
+      setAdminToken(null);
+      sessionStorage.removeItem('mobile_store_admin_active');
+      sessionStorage.removeItem('mobile_store_admin_token');
+      window.location.hash = '';
+      setCurrentView('storefront');
+      addToast('Admin session expired. Please log in again.', 'error');
+    }
+  };
+
+  const checkResponseStatus = async (res) => {
+    if (res.status === 401) {
+      handleAuthFailure();
+      return false;
+    }
+    if (res.status === 403) {
+      try {
+        const data = await res.clone().json();
+        if (data && data.error && (data.error.includes('Session expired') || data.error.includes('invalid token'))) {
+          handleAuthFailure();
+          return false;
+        }
+      } catch {
+        // ignore
+      }
+    }
+    return true;
+  };
   
   const [currentView, setCurrentView] = useState('storefront');
   const [adminPanel, setAdminPanel] = useState('dashboard');
@@ -65,29 +113,37 @@ export const StoreProvider = ({ children }) => {
     }
   }
 
-  const fetchUsers = async () => {
+  const fetchUsers = async (tokenOverride) => {
+    const token = tokenOverride || adminToken || userToken || sessionStorage.getItem('mobile_store_admin_token') || sessionStorage.getItem('mobile_store_user_token');
     try {
-      const res = await fetch(`${API_BASE}/users`);
+      const headers = {};
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+      const res = await fetch(`${API_BASE}/users`, { headers });
       if (res.ok) {
         const data = await res.json();
         setRegisteredUsers(data);
       } else {
         console.error('Failed to load users from server');
+        await checkResponseStatus(res);
       }
     } catch (err) {
       console.error('Failed to connect to server for users:', err);
     }
   };
 
-  const fetchOrders = async () => {
+  const fetchOrders = async (tokenOverride) => {
+    const token = tokenOverride || adminToken || userToken || sessionStorage.getItem('mobile_store_admin_token') || sessionStorage.getItem('mobile_store_user_token');
     try {
-      const res = await fetch(`${API_BASE}/orders`);
+      const headers = {};
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+      const res = await fetch(`${API_BASE}/orders`, { headers });
       if (res.ok) {
         const data = await res.json();
         setOrders(data);
         return data;
       } else {
         console.error('Failed to load orders from server');
+        await checkResponseStatus(res);
         return [];
       }
     } catch (err) {
@@ -98,10 +154,31 @@ export const StoreProvider = ({ children }) => {
 
   // --- INITIALIZATION ---
   useEffect(() => {
+    // Load active sessions from sessionStorage (retains refresh-persistence)
+    const storedUserSession = sessionStorage.getItem('mobile_store_active_user');
+    const storedUserToken = sessionStorage.getItem('mobile_store_user_token');
+    if (storedUserSession && storedUserToken) {
+      setCurrentUser(JSON.parse(storedUserSession));
+      setUserToken(storedUserToken);
+    }
+
+    const storedAdminSession = sessionStorage.getItem('mobile_store_admin_active');
+    const storedAdminToken = sessionStorage.getItem('mobile_store_admin_token');
+    if (storedAdminSession && storedAdminToken) {
+      setIsAdminLoggedIn(JSON.parse(storedAdminSession));
+      setAdminToken(storedAdminToken);
+    }
+
+    const activeToken = storedAdminToken || storedUserToken;
+
     // Fetch all database records from the backend
     fetchProducts();
-    fetchUsers();
-    fetchOrders();
+    if (storedAdminToken) {
+      fetchUsers(storedAdminToken);
+    }
+    if (activeToken) {
+      fetchOrders(activeToken);
+    }
 
     // Load local cart from localStorage (retains instant client-side cart experience)
     const storedCart = localStorage.getItem('mobile_store_cart_react_hybrid');
@@ -111,32 +188,41 @@ export const StoreProvider = ({ children }) => {
       setCart([]);
     }
 
-    // Load active sessions from sessionStorage (retains refresh-persistence)
-    const storedUserSession = sessionStorage.getItem('mobile_store_active_user');
-    if (storedUserSession) {
-      setCurrentUser(JSON.parse(storedUserSession));
-    }
-
-    const storedAdminSession = sessionStorage.getItem('mobile_store_admin_active');
-    if (storedAdminSession) {
-      setIsAdminLoggedIn(JSON.parse(storedAdminSession));
-    }
-
     // Load wishlist
     const storedWish = localStorage.getItem('mobile_store_wishlist_react');
     if (storedWish) {
       setWishlist(JSON.parse(storedWish));
     }
 
-    // Load theme preference
-    const storedTheme = localStorage.getItem('mobile_store_theme_react') || 'dark';
-    setTheme(storedTheme);
-    if (storedTheme === 'light') {
+    // Theme preference and persistence is managed by a separate useEffect hook.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Theme Sync effect
+  useEffect(() => {
+    localStorage.setItem('aura_theme', theme);
+    document.documentElement.setAttribute('data-theme', theme);
+    if (theme === 'light') {
       document.body.classList.add('light-theme');
     } else {
       document.body.classList.remove('light-theme');
     }
-  }, []);
+  }, [theme]);
+
+  // Saved For Later Sync effect
+  useEffect(() => {
+    localStorage.setItem('mobile_store_saved_for_later', JSON.stringify(savedForLater));
+  }, [savedForLater]);
+
+  // Recently Viewed Sync effect
+  useEffect(() => {
+    if (selectedProductId) {
+      setRecentlyViewed((prev) => {
+        const filtered = prev.filter((id) => id !== selectedProductId);
+        return [selectedProductId, ...filtered].slice(0, 5);
+      });
+    }
+  }, [selectedProductId]);
 
   // --- HASH ROUTING SYNC ---
   useEffect(() => {
@@ -204,13 +290,15 @@ export const StoreProvider = ({ children }) => {
       }
 
       setCurrentUser(data.user);
+      setUserToken(data.token);
       sessionStorage.setItem('mobile_store_active_user', JSON.stringify(data.user));
+      sessionStorage.setItem('mobile_store_user_token', data.token);
       addToast(`Account created! Welcome, ${data.user.firstName}`, 'success');
       
-      // Refresh local users list
-      fetchUsers();
+      // Refresh local users list if possible
+      fetchUsers(data.token);
       return true;
-    } catch (err) {
+    } catch {
       addToast('Server connection error during registration.', 'error');
       return false;
     }
@@ -231,10 +319,15 @@ export const StoreProvider = ({ children }) => {
       }
 
       setCurrentUser(data.user);
+      setUserToken(data.token);
       sessionStorage.setItem('mobile_store_active_user', JSON.stringify(data.user));
+      sessionStorage.setItem('mobile_store_user_token', data.token);
       addToast(`Logged in successfully. Welcome back, ${data.user.firstName}!`, 'success');
+      
+      // Load user orders immediately
+      fetchOrders(data.token);
       return true;
-    } catch (err) {
+    } catch {
       addToast('Server connection error during login.', 'error');
       return false;
     }
@@ -242,27 +335,34 @@ export const StoreProvider = ({ children }) => {
 
   const logoutUser = () => {
     setCurrentUser(null);
+    setUserToken(null);
     sessionStorage.removeItem('mobile_store_active_user');
+    sessionStorage.removeItem('mobile_store_user_token');
     addToast('Logged out of your profile session.', 'warning');
   };
 
   // --- ADMINISTRATOR USER MANAGEMENT ACTIONS ---
   const saveUser = async (userData) => {
+    const activeToken = adminToken || userToken || sessionStorage.getItem('mobile_store_admin_token') || sessionStorage.getItem('mobile_store_user_token');
     try {
+      const headers = { 'Content-Type': 'application/json' };
+      if (activeToken) headers['Authorization'] = `Bearer ${activeToken}`;
+
       const res = await fetch(`${API_BASE}/users`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify(userData)
       });
       const data = await res.json();
 
       if (!res.ok) {
         addToast(data.error || 'Failed to update user profile.', 'error');
+        await checkResponseStatus(res);
         return;
       }
 
       // Sync local users list
-      await fetchUsers();
+      await fetchUsers(activeToken);
       
       const emailKey = userData.email.toLowerCase().trim();
       
@@ -278,25 +378,31 @@ export const StoreProvider = ({ children }) => {
       }
       
       addToast(`Successfully updated profile for ${userData.firstName}.`, 'success');
-    } catch (err) {
+    } catch {
       addToast('Server connection error while saving user profile.', 'error');
     }
   };
 
   const toggleUserActive = async (email) => {
+    const activeToken = adminToken || sessionStorage.getItem('mobile_store_admin_token');
     try {
+      const headers = {};
+      if (activeToken) headers['Authorization'] = `Bearer ${activeToken}`;
+
       const res = await fetch(`${API_BASE}/users/${encodeURIComponent(email)}/toggle-active`, {
-        method: 'PATCH'
+        method: 'PATCH',
+        headers
       });
       const data = await res.json();
 
       if (!res.ok) {
         addToast(data.error || 'Failed to toggle user status.', 'error');
+        await checkResponseStatus(res);
         return;
       }
 
       // Sync local users list
-      await fetchUsers();
+      await fetchUsers(activeToken);
 
       const newActiveState = data.isActive;
       
@@ -310,7 +416,7 @@ export const StoreProvider = ({ children }) => {
           newActiveState ? 'success' : 'warning'
         );
       }
-    } catch (err) {
+    } catch {
       addToast('Server connection error while toggling user status.', 'error');
     }
   };
@@ -331,10 +437,16 @@ export const StoreProvider = ({ children }) => {
       }
 
       setIsAdminLoggedIn(true);
+      setAdminToken(data.token);
       sessionStorage.setItem('mobile_store_admin_active', JSON.stringify(true));
+      sessionStorage.setItem('mobile_store_admin_token', data.token);
       addToast('Access granted. Welcome, Administrator.', 'success');
+      
+      // Load administrative data using token directly
+      await fetchUsers(data.token);
+      await fetchOrders(data.token);
       return true;
-    } catch (err) {
+    } catch {
       addToast('Server connection error during administrator login.', 'error');
       return false;
     }
@@ -342,7 +454,9 @@ export const StoreProvider = ({ children }) => {
 
   const logoutAdmin = () => {
     setIsAdminLoggedIn(false);
+    setAdminToken(null);
     sessionStorage.removeItem('mobile_store_admin_active');
+    sessionStorage.removeItem('mobile_store_admin_token');
     window.location.hash = '';
     setCurrentView('storefront');
     addToast('Administrator session terminated.', 'warning');
@@ -436,14 +550,97 @@ export const StoreProvider = ({ children }) => {
     localStorage.setItem('mobile_store_cart_react_hybrid', JSON.stringify([]));
   };
 
+  const saveForLater = (productId, storage, color) => {
+    const itemToSave = cart.find(
+      (item) => item.productId === productId && item.storage === storage && item.color === color
+    );
+    if (!itemToSave) return;
+
+    const updatedCart = cart.filter(
+      (item) => !(item.productId === productId && item.storage === storage && item.color === color)
+    );
+    setCart(updatedCart);
+    localStorage.setItem('mobile_store_cart_react_hybrid', JSON.stringify(updatedCart));
+
+    const exists = savedForLater.some(
+      (item) => item.productId === productId && item.storage === storage && item.color === color
+    );
+    if (!exists) {
+      setSavedForLater([...savedForLater, { ...itemToSave }]);
+    }
+    
+    const prod = products.find((p) => p.id === productId);
+    const name = prod ? prod.name : 'Item';
+    addToast(`Saved ${name} for later.`, 'success');
+  };
+
+  const moveToCart = (productId, storage, color) => {
+    const itemToMove = savedForLater.find(
+      (item) => item.productId === productId && item.storage === storage && item.color === color
+    );
+    if (!itemToMove) return;
+
+    const updatedSaved = savedForLater.filter(
+      (item) => !(item.productId === productId && item.storage === storage && item.color === color)
+    );
+    setSavedForLater(updatedSaved);
+
+    const phone = products.find((p) => p.id === productId);
+    if (!phone) return;
+
+    if (phone.stock === 0) {
+      addToast(`${phone.name} is out of stock. Cannot move to cart.`, 'error');
+      return;
+    }
+
+    const existingCartItem = cart.find(
+      (item) => item.productId === productId && item.storage === storage && item.color === color
+    );
+    let updatedCart = [];
+
+    if (existingCartItem) {
+      const newQty = existingCartItem.quantity + itemToMove.quantity;
+      const finalQty = Math.min(newQty, phone.stock);
+      if (newQty > phone.stock) {
+        addToast(`Only ${phone.stock} units available in stock. Quantity adjusted.`, 'warning');
+      }
+      updatedCart = cart.map((item) =>
+        item.productId === productId && item.storage === storage && item.color === color
+          ? { ...item, quantity: finalQty }
+          : item
+      );
+    } else {
+      updatedCart = [...cart, { ...itemToMove }];
+    }
+
+    setCart(updatedCart);
+    localStorage.setItem('mobile_store_cart_react_hybrid', JSON.stringify(updatedCart));
+
+    addToast(`Moved ${phone.name} back to cart.`, 'success');
+  };
+
+  const removeFromSavedForLater = (productId, storage, color) => {
+    const updatedSaved = savedForLater.filter(
+      (item) => !(item.productId === productId && item.storage === storage && item.color === color)
+    );
+    setSavedForLater(updatedSaved);
+    const prod = products.find((p) => p.id === productId);
+    const name = prod ? prod.name : 'Item';
+    addToast(`Removed ${name} from saved items.`, 'warning');
+  };
+
   // --- CHECKOUT & ORDER PROCESSING ---
   const processOrder = async (shippingForm, discountCode = '') => {
     if (cart.length === 0) return false;
 
+    const token = userToken || sessionStorage.getItem('mobile_store_user_token');
     try {
+      const headers = { 'Content-Type': 'application/json' };
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+
       const res = await fetch(`${API_BASE}/orders`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({
           shippingForm,
           cart,
@@ -455,12 +652,13 @@ export const StoreProvider = ({ children }) => {
 
       if (!res.ok) {
         addToast(data.error || 'Order processing failed.', 'error');
+        await checkResponseStatus(res);
         return false;
       }
 
       // Sync products (reflecting stock deductions) and orders list
       await fetchProducts();
-      await fetchOrders();
+      await fetchOrders(token);
       
       // Clear local cart
       clearCart();
@@ -468,7 +666,7 @@ export const StoreProvider = ({ children }) => {
       switchView('success');
       addToast('Thank you! Order placed successfully.', 'success');
       return data.order;
-    } catch (err) {
+    } catch {
       addToast('Server connection error during order checkout.', 'error');
       return false;
     }
@@ -476,36 +674,47 @@ export const StoreProvider = ({ children }) => {
 
   // --- ADMINISTRATOR PRODUCT MANAGEMENT (CRUD) ---
   const saveProduct = async (productData) => {
+    const token = adminToken || sessionStorage.getItem('mobile_store_admin_token');
     try {
+      const headers = { 'Content-Type': 'application/json' };
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+
       const res = await fetch(`${API_BASE}/products`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify(productData)
       });
       const data = await res.json();
 
       if (!res.ok) {
         addToast(data.error || 'Failed to save product.', 'error');
+        await checkResponseStatus(res);
         return;
       }
 
       // Sync local products list
       await fetchProducts();
       addToast(productData.id ? 'Updated smartphone specifications.' : `Created new product: ${productData.name}`, 'success');
-    } catch (err) {
+    } catch {
       addToast('Server connection error while saving product specifications.', 'error');
     }
   };
 
   const deleteProduct = async (productId) => {
+    const token = adminToken || sessionStorage.getItem('mobile_store_admin_token');
     try {
+      const headers = {};
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+
       const res = await fetch(`${API_BASE}/products/${productId}`, {
-        method: 'DELETE'
+        method: 'DELETE',
+        headers
       });
       const data = await res.json();
 
       if (!res.ok) {
         addToast(data.error || 'Failed to delete product.', 'error');
+        await checkResponseStatus(res);
         return;
       }
 
@@ -520,108 +729,154 @@ export const StoreProvider = ({ children }) => {
       }
 
       addToast('Deleted smartphone from inventory.', 'warning');
-    } catch (err) {
+    } catch {
       addToast('Server connection error while deleting product.', 'error');
     }
   };
 
   // --- ADMINISTRATOR ORDER STATUS UPDATES ---
   const changeOrderStatus = async (orderId, newStatus) => {
+    const token = adminToken || sessionStorage.getItem('mobile_store_admin_token');
     try {
+      const headers = { 'Content-Type': 'application/json' };
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+
       const res = await fetch(`${API_BASE}/orders/${orderId}/status`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({ status: newStatus })
       });
       const data = await res.json();
 
       if (!res.ok) {
         addToast(data.error || 'Failed to change order status.', 'error');
+        await checkResponseStatus(res);
         return;
       }
 
       // Sync products (refunded/deducted stock) and orders list
       await fetchProducts();
-      await fetchOrders();
+      await fetchOrders(token);
 
       addToast(`Order ${orderId} status changed to ${newStatus}.`, newStatus === 'cancelled' ? 'warning' : 'success');
-    } catch (err) {
+    } catch {
       addToast('Server connection error while updating order status.', 'error');
     }
   };
 
   // --- ADMINISTRATOR TRACKING UPDATES ---
   const addTrackingUpdate = async (orderId, location, note, status) => {
+    const token = adminToken || sessionStorage.getItem('mobile_store_admin_token');
     try {
+      const headers = { 'Content-Type': 'application/json' };
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+
       const res = await fetch(`${API_BASE}/orders/${orderId}/tracking`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({ location, note, status })
       });
       const data = await res.json();
 
       if (!res.ok) {
         addToast(data.error || 'Failed to add tracking update.', 'error');
+        await checkResponseStatus(res);
         return false;
       }
 
       await fetchProducts();
-      await fetchOrders();
+      await fetchOrders(token);
       addToast(`Tracking update added to ${orderId}.`, 'success');
       return true;
-    } catch (err) {
+    } catch {
       addToast('Server connection error while adding tracking update.', 'error');
       return false;
     }
   };
 
   const cancelOrderWithReason = async (orderId, reason) => {
+    const token = adminToken || sessionStorage.getItem('mobile_store_admin_token');
     try {
+      const headers = { 'Content-Type': 'application/json' };
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+
       const res = await fetch(`${API_BASE}/orders/${orderId}/cancel`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({ reason })
       });
       const data = await res.json();
 
       if (!res.ok) {
         addToast(data.error || 'Failed to cancel order.', 'error');
+        await checkResponseStatus(res);
         return false;
       }
 
       await fetchProducts();
-      await fetchOrders();
+      await fetchOrders(token);
       addToast(`Order ${orderId} has been cancelled.`, 'warning');
       return true;
-    } catch (err) {
+    } catch {
       addToast('Server connection error while cancelling order.', 'error');
       return false;
     }
   };
 
-  const backupDatabase = () => {
-    window.location.href = `${API_BASE}/admin/backup`;
+  const backupDatabase = async () => {
+    const token = adminToken || sessionStorage.getItem('mobile_store_admin_token');
+    if (!token) {
+      addToast('Administrator privileges required.', 'error');
+      return;
+    }
+    try {
+      const res = await fetch(`${API_BASE}/admin/backup`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (!res.ok) {
+        addToast('Failed to download backup.', 'error');
+        await checkResponseStatus(res);
+        return;
+      }
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'aura_db_backup.json';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+      addToast('Database backup downloaded successfully.', 'success');
+    } catch {
+      addToast('Failed to initiate backup download.', 'error');
+    }
   };
 
   const restoreDatabase = async (backupData) => {
+    const token = adminToken || sessionStorage.getItem('mobile_store_admin_token');
     try {
+      const headers = { 'Content-Type': 'application/json' };
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+
       const res = await fetch(`${API_BASE}/admin/restore`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify(backupData)
       });
       const data = await res.json();
       if (res.ok) {
         addToast('Database backup successfully restored!', 'success');
         await fetchProducts();
-        await fetchUsers();
-        await fetchOrders();
+        await fetchUsers(token);
+        await fetchOrders(token);
         return true;
       } else {
         addToast(data.error || 'Failed to restore database.', 'error');
+        await checkResponseStatus(res);
         return false;
       }
-    } catch (err) {
+    } catch {
       addToast('Error communicating with restoration server.', 'error');
       return false;
     }
@@ -643,14 +898,7 @@ export const StoreProvider = ({ children }) => {
   };
 
   const toggleTheme = () => {
-    const nextTheme = theme === 'dark' ? 'light' : 'dark';
-    setTheme(nextTheme);
-    localStorage.setItem('mobile_store_theme_react', nextTheme);
-    if (nextTheme === 'light') {
-      document.body.classList.add('light-theme');
-    } else {
-      document.body.classList.remove('light-theme');
-    }
+    setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'));
   };
 
   const toggleCompare = (productId) => {
@@ -685,6 +933,11 @@ export const StoreProvider = ({ children }) => {
         theme,
         compareIds,
         setCompareIds,
+        recentlyViewed,
+        savedForLater,
+        saveForLater,
+        moveToCart,
+        removeFromSavedForLater,
         
         // Auth states
         registeredUsers,

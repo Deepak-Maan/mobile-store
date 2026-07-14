@@ -198,7 +198,7 @@ const ShippingMap = ({ status }) => {
 };
 
 export const OrderTracker = () => {
-  const { orders, fetchOrders, switchView, trackingOrderId, setTrackingOrderId } = useStore();
+  const { fetchOrders, switchView, trackingOrderId, setTrackingOrderId } = useStore();
   const [orderIdInput, setOrderIdInput] = useState(trackingOrderId || '');
   const [searchedOrder, setSearchedOrder] = useState(null);
   const [hasSearched, setHasSearched] = useState(false);
@@ -237,6 +237,7 @@ export const OrderTracker = () => {
       };
       autoSearch();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [trackingOrderId]);
 
   const handleSearch = async (e) => {
@@ -264,7 +265,7 @@ export const OrderTracker = () => {
         setErrorMsg(`We couldn't find an order matching "${query}". Please check the Order ID and try again.`);
       }
       setHasSearched(true);
-    } catch (err) {
+    } catch {
       console.error("OrderTracker handleSearch error details:", err);
       setErrorMsg(`Failed to look up order: ${err.message || err}`);
     } finally {

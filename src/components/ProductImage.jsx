@@ -88,7 +88,7 @@ export const ProductImage = ({ src, alt, className, style, color }) => {
         const dataUrl = canvas.toDataURL();
         colorCache.set(cacheKey, dataUrl);
         setDisplaySrc(dataUrl);
-      } catch (err) {
+      } catch {
         // Fallback to original image path if CORS restricts canvas reading (e.g. testing local server files)
         setDisplaySrc(src);
       } finally {

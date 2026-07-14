@@ -1,6 +1,6 @@
 import React from 'react';
 import { useStore } from '../context/StoreContext';
-import { X, ShoppingCart, Trash2 } from 'lucide-react';
+import { X, ShoppingCart } from 'lucide-react';
 import { ProductImage } from './ProductImage';
 import { formatINR } from '../utils/currency';
 

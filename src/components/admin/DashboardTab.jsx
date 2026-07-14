@@ -20,7 +20,7 @@ export const DashboardTab = () => {
         if (confirmRestore) {
           await restoreDatabase(json);
         }
-      } catch (err) {
+      } catch {
         alert("Invalid file: Failed to parse JSON database backup.");
       }
     };

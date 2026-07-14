@@ -4,9 +4,20 @@ import { useStore } from '../context/StoreContext';
 import { Eye, Plus, Heart } from 'lucide-react';
 import { ProductImage } from './ProductImage';
 import { formatINR } from '../utils/currency';
+import { useCartFly } from './CartFlyAnimation';
+import { createRipple } from '../utils/ripple';
 
 export const ProductCard = ({ product }) => {
   const { addToCart, setSelectedProductId, wishlist, toggleWishlist, compareIds, toggleCompare } = useStore();
+  const { triggerFly } = useCartFly();
+
+  const handleAddToCart = (e) => {
+    createRipple(e);
+    if (product.stock > 0) {
+      triggerFly(e, product.images[0]);
+    }
+    addToCart(product.id);
+  };
 
   const isWishlisted = wishlist.includes(product.id);
   const isCompared = compareIds.includes(product.id);
@@ -85,7 +96,17 @@ export const ProductCard = ({ product }) => {
 
         <div className="badge-overlay">
           {product.featured && <span className="featured-badge">Featured</span>}
-          <span className={`stock-badge ${stockClass}`}>{stockText}</span>
+          {stockClass === 'low-stock' ? (
+            <motion.div
+              animate={{ scale: [1, 1.06, 1], opacity: [0.9, 1, 0.9] }}
+              transition={{ repeat: Infinity, duration: 1.5, ease: "easeInOut" }}
+              style={{ display: 'inline-block' }}
+            >
+              <span className={`stock-badge ${stockClass}`}>{stockText}</span>
+            </motion.div>
+          ) : (
+            <span className={`stock-badge ${stockClass}`}>{stockText}</span>
+          )}
         </div>
       </div>
       
@@ -114,13 +135,16 @@ export const ProductCard = ({ product }) => {
           <button 
             className="card-btn" 
             title="View details" 
-            onClick={() => setSelectedProductId(product.id)}
+            onClick={(e) => {
+              createRipple(e);
+              setSelectedProductId(product.id);
+            }}
           >
             <Eye width="18" height="18" />
           </button>
           <button 
             className="card-btn add-to-cart-btn" 
-            onClick={() => addToCart(product.id)} 
+            onClick={handleAddToCart} 
             disabled={isOutOfStock}
           >
             <Plus width="18" height="18" />

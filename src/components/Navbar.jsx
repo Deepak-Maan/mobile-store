@@ -64,9 +64,8 @@ export const Navbar = ({ onOpenCart, onOpenAuth, onOpenWishlist }) => {
           <span className="brand-name">AURA</span>
         </a>
 
-        {/* Smart Search */}
         {!isAdminLoggedIn && (
-          <div style={{ flex: 1, maxWidth: '340px', margin: '0 1.2rem' }}>
+          <div className="nav-search-wrapper">
             <SmartSearch />
           </div>
         )}
@@ -84,11 +83,43 @@ export const Navbar = ({ onOpenCart, onOpenAuth, onOpenWishlist }) => {
           ) : (
             <>
               {/* Theme */}
-              <button className="nav-btn" onClick={toggleTheme}
-                style={{ padding: '0.6rem 0.8rem' }}
-                title={theme === 'dark' ? 'Light Mode' : 'Dark Mode'}>
-                {theme === 'dark' ? <Sun width="16" height="16" /> : <Moon width="16" height="16" />}
-              </button>
+              <motion.button 
+                className="nav-btn theme-toggle" 
+                onClick={toggleTheme}
+                whileHover={{ scale: 1.08 }}
+                whileTap={{ scale: 0.95 }}
+                style={{ 
+                  padding: '0.5rem', 
+                  borderRadius: '50%',
+                  width: '36px',
+                  height: '36px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  background: theme === 'dark' ? 'rgba(255, 243, 205, 0.1)' : 'rgba(99, 102, 241, 0.1)',
+                  border: '1px solid',
+                  borderColor: theme === 'dark' ? 'rgba(255, 243, 205, 0.2)' : 'rgba(99, 102, 241, 0.2)',
+                  boxShadow: theme === 'dark' ? '0 0 10px rgba(245, 158, 11, 0.15)' : '0 0 10px rgba(99, 102, 241, 0.15)',
+                  cursor: 'pointer'
+                }}
+                title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}>
+                <AnimatePresence mode="wait" initial={false}>
+                  <motion.div
+                    key={theme}
+                    initial={{ scale: 0.5, opacity: 0, rotate: -90 }}
+                    animate={{ scale: 1, opacity: 1, rotate: 0 }}
+                    exit={{ scale: 0.5, opacity: 0, rotate: 90 }}
+                    transition={{ duration: 0.2 }}
+                    style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                  >
+                    {theme === 'dark' ? (
+                      <Sun width="16" height="16" fill="#f59e0b" color="#f59e0b" />
+                    ) : (
+                      <Moon width="16" height="16" fill="#6366f1" color="#6366f1" />
+                    )}
+                  </motion.div>
+                </AnimatePresence>
+              </motion.button>
 
               {/* Shop */}
               <button className={`nav-btn ${currentView === 'storefront' ? 'active' : ''}`}

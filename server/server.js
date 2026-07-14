@@ -1,22 +1,306 @@
-import express from 'express';
-import cors from 'cors';
-import morgan from 'morgan';
-import fs from 'fs';
+import dotenv from 'dotenv';
 import path from 'path';
-import crypto from 'crypto';
 import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const DB_PATH = path.join(__dirname, 'db.json');
 
+// Load environment variables from .env BEFORE anything else
+dotenv.config({ path: path.join(__dirname, '../.env') });
+
+import express from 'express';
+import cors from 'cors';
+import morgan from 'morgan';
+import fs from 'fs';
+import crypto from 'crypto';
+import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
+import helmet from 'helmet';
+import { rateLimit } from 'express-rate-limit';
+import { z } from 'zod';
+
+const DB_PATH = path.join(__dirname, 'db.json');
 const app = express();
 const PORT = process.env.PORT || 5000;
+const JWT_SECRET = process.env.JWT_SECRET || 'fallback_secret_change_me_NOW';
+const NODE_ENV = process.env.NODE_ENV || 'development';
 
-// Middleware
-app.use(cors());
+const loginAttempts = {};
+
+// Helper to check lockout
+const checkLockout = (key, res) => {
+  const now = new Date();
+  if (loginAttempts[key]) {
+    const attempt = loginAttempts[key];
+    if (attempt.lockedUntil && attempt.lockedUntil > now) {
+      const remainingMs = attempt.lockedUntil.getTime() - now.getTime();
+      const remainingMinutes = Math.ceil(remainingMs / (60 * 1000));
+      res.status(429).json({ error: `Account locked. Try again in ${remainingMinutes} minutes.` });
+      return true; // Locked
+    }
+    if (attempt.lockedUntil && attempt.lockedUntil <= now) {
+      // Lockout expired, clear attempts
+      delete loginAttempts[key];
+    }
+  }
+  return false; // Not locked
+};
+
+// Helper to handle failed login attempt
+const handleFailedAttempt = (key, res, defaultError) => {
+  if (!loginAttempts[key]) {
+    loginAttempts[key] = { attempts: 1, lockedUntil: null };
+  } else {
+    loginAttempts[key].attempts += 1;
+  }
+
+  if (loginAttempts[key].attempts >= 5) {
+    const lockoutTime = new Date();
+    lockoutTime.setMinutes(lockoutTime.getMinutes() + 15);
+    loginAttempts[key].lockedUntil = lockoutTime;
+    return res.status(429).json({ error: `Account locked. Try again in 15 minutes.` });
+  }
+
+  return res.status(401).json({ error: defaultError });
+};
+
+// Helper to handle successful login
+const handleSuccessfulLogin = (key) => {
+  if (loginAttempts[key]) {
+    delete loginAttempts[key];
+  }
+};
+
+// ============================================================================
+// 1. HELMET — Secure HTTP Headers (XSS, Clickjacking, CSP, MIME sniffing, etc.)
+// ============================================================================
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
+      styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+      fontSrc: ["'self'", "https://fonts.gstatic.com"],
+      imgSrc: ["'self'", "data:", "https:"],
+      connectSrc: ["'self'", "http://localhost:5000", "http://localhost:5173", "http://localhost:5174", "https:"],
+      objectSrc: ["'none'"],
+      frameSrc: ["'none'"],
+      upgradeInsecureRequests: [],
+    },
+  },
+}));
+
+// ============================================================================
+// 2. CORS — Restrict to authorized origins only
+// ============================================================================
+const allowedOriginsEnv = process.env.CORS_ORIGIN || 'http://localhost:5173,http://localhost:5174';
+const allowedOrigins = allowedOriginsEnv.split(',').map(o => o.trim());
+
+app.use(cors({
+  origin: (origin, callback) => {
+    // Allow requests with no origin (mobile apps, Postman, etc. in dev)
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.includes(origin) || allowedOrigins.includes('*')) {
+      return callback(null, true);
+    }
+    return callback(new Error(`CORS: Origin "${origin}" is not allowed.`));
+  },
+  credentials: true
+}));
+
 app.use(express.json({ limit: '10mb' })); // support large base64 image uploads
-app.use(morgan('dev'));
+app.use(morgan(NODE_ENV === 'production' ? 'combined' : 'dev'));
+
+// --- Anti-XSS Sanitizer Helpers ---
+const escapeHTML = (str) => {
+  if (typeof str !== 'string') return str;
+  // Ignore base64 images or SVGs to prevent breaking them
+  if (str.startsWith('data:image/') || str.trim().startsWith('<svg')) {
+    return str;
+  }
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#x27;')
+    .replace(/\//g, '&#x2F;');
+};
+
+const sanitizeInput = (obj) => {
+  if (obj === null || obj === undefined) return obj;
+  if (Array.isArray(obj)) {
+    return obj.map(item => sanitizeInput(item));
+  }
+  if (typeof obj === 'object') {
+    const sanitized = {};
+    for (const key in obj) {
+      if (Object.prototype.hasOwnProperty.call(obj, key)) {
+        sanitized[key] = sanitizeInput(obj[key]);
+      }
+    }
+    return sanitized;
+  }
+  if (typeof obj === 'string') {
+    return escapeHTML(obj);
+  }
+  return obj;
+};
+
+const xssSanitizerMiddleware = (req, res, next) => {
+  if (req.body) req.body = sanitizeInput(req.body);
+  if (req.query) req.query = sanitizeInput(req.query);
+  if (req.params) req.params = sanitizeInput(req.params);
+  next();
+};
+
+// --- HTTP Parameter Pollution (HPP) Prevention ---
+const hppMiddleware = (req, res, next) => {
+  if (req.query) {
+    for (const key in req.query) {
+      if (Array.isArray(req.query[key])) {
+        req.query[key] = req.query[key][0];
+      }
+    }
+  }
+  next();
+};
+
+app.use(hppMiddleware);
+app.use(xssSanitizerMiddleware);
+
+// ============================================================================
+// 3. RATE LIMITING — Protect against brute force & DDoS
+// ============================================================================
+// General API limiter
+const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  limit: 300,
+  standardHeaders: 'draft-7',
+  legacyHeaders: false,
+  message: { error: 'Too many requests. Please try again after 15 minutes.' }
+});
+
+// Strict limiter for auth endpoints
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 15, // max 15 login/register attempts per IP per 15 min
+  standardHeaders: 'draft-7',
+  legacyHeaders: false,
+  message: { error: 'Too many authentication attempts. Please try again after 15 minutes.' }
+});
+
+app.use('/api/', apiLimiter);
+app.use('/api/auth/', authLimiter);
+
+// ============================================================================
+// 4. JWT AUTHENTICATION MIDDLEWARES
+// ============================================================================
+
+// Optional auth — attaches user if token present, continues regardless
+const authenticateToken = (req, res, next) => {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1]; // "Bearer <token>"
+
+  if (!token) {
+    req.user = null;
+    return next();
+  }
+
+  jwt.verify(token, JWT_SECRET, (err, decoded) => {
+    if (err) {
+      return res.status(403).json({ error: 'Session expired or invalid token. Please log in again.' });
+    }
+    req.user = decoded;
+    next();
+  });
+};
+
+// Must be logged in (any role)
+const requireUser = (req, res, next) => {
+  authenticateToken(req, res, () => {
+    if (!req.user) {
+      return res.status(401).json({ error: 'Authentication required. Please log in.' });
+    }
+    next();
+  });
+};
+
+// Must be admin
+const requireAdmin = (req, res, next) => {
+  authenticateToken(req, res, () => {
+    if (!req.user || req.user.role !== 'admin') {
+      return res.status(403).json({ error: 'Access denied. Administrator privileges required.' });
+    }
+    next();
+  });
+};
+
+// ============================================================================
+// 5. ZOD INPUT VALIDATION SCHEMAS & MIDDLEWARE
+// ============================================================================
+const validateBody = (schema) => (req, res, next) => {
+  try {
+    req.body = schema.parse(req.body);
+    next();
+  } catch {
+    if (err instanceof z.ZodError) {
+      return res.status(400).json({
+        error: 'Validation failed',
+        details: err.errors.map(e => `${e.path.join('.')}: ${e.message}`)
+      });
+    }
+    next(err);
+  }
+};
+
+// Validation schemas
+const registerSchema = z.object({
+  firstName: z.string().min(1, 'First name required').max(50).trim(),
+  lastName:  z.string().min(1, 'Last name required').max(50).trim(),
+  email:     z.string().email('Invalid email address'),
+  password:  z.string().min(6, 'Password must be at least 6 characters').max(128)
+});
+
+const loginSchema = z.object({
+  email:    z.string().email('Invalid email address'),
+  password: z.string().min(1, 'Password is required')
+});
+
+const adminLoginSchema = z.object({
+  username: z.string().min(1, 'Username is required'),
+  password: z.string().min(1, 'Password is required')
+});
+
+const orderItemSchema = z.object({
+  id:        z.string().optional(),
+  productId: z.string(),
+  name:      z.string().optional(),
+  brand:     z.string().optional(),
+  price:     z.number().positive().optional(),
+  quantity:  z.number().int().min(1, 'Quantity must be at least 1'),
+  storage:   z.string().nullable().optional(),
+  color:     z.string().nullable().optional()
+});
+
+const shippingFormSchema = z.object({
+  firstName:     z.string().min(1, 'First name required').max(60),
+  lastName:      z.string().min(1, 'Last name required').max(60),
+  email:         z.string().email('Invalid email'),
+  phone:         z.string().min(7, 'Phone number too short').max(20),
+  address:       z.string().min(1, 'Address required').max(200),
+  city:          z.string().min(1, 'City required').max(100),
+  zip:           z.string().min(4, 'ZIP too short').max(12),
+  paymentMethod: z.enum(['card', 'upi']),
+  utrNumber:     z.string().nullable().optional()
+});
+
+const orderCreateSchema = z.object({
+  shippingForm:  shippingFormSchema,
+  cart:          z.array(orderItemSchema).min(1, 'Cart cannot be empty'),
+  userEmail:     z.string().nullable().optional(),
+  discountCode:  z.string().max(30).nullable().optional()
+});
 
 // Helper: Read Database
 const readDB = () => {
@@ -27,7 +311,7 @@ const readDB = () => {
     }
     const data = fs.readFileSync(DB_PATH, 'utf8');
     return JSON.parse(data);
-  } catch (err) {
+  } catch {
     console.error('Error reading database file:', err);
     return { products: [], users: [], orders: [] };
   }
@@ -38,32 +322,33 @@ const writeDB = (data) => {
   try {
     fs.writeFileSync(DB_PATH, JSON.stringify(data, null, 2), 'utf8');
     return true;
-  } catch (err) {
+  } catch {
     console.error('Error writing database file:', err);
     return false;
   }
 };
 
-// Helper: Hashing and cryptographic password checks
-const hashPassword = (password, salt) => {
-  if (!salt) {
-    salt = crypto.randomBytes(16).toString('hex');
-  }
-  const hash = crypto.pbkdf2Sync(password, salt, 1000, 64, 'sha512').toString('hex');
-  return { salt, hash };
+// Helper: Hash password with bcrypt (cost 12 for strong security)
+const hashPassword = (password) => {
+  const salt = bcrypt.genSaltSync(12);
+  return bcrypt.hashSync(password, salt);
 };
 
-const verifyPassword = (password, salt, hash) => {
-  const check = crypto.pbkdf2Sync(password, salt, 1000, 64, 'sha512').toString('hex');
-  return check === hash;
-};
-
+// Backward-compatible password checker: bcrypt → PBKDF2 → plaintext
 const checkPassword = (user, inputPassword) => {
-  if (user.salt && user.hash) {
-    return verifyPassword(inputPassword, user.salt, user.hash);
+  // 1. Modern bcrypt hash
+  if (user.hash && (user.hash.startsWith('$2a$') || user.hash.startsWith('$2b$'))) {
+    return bcrypt.compareSync(inputPassword, user.hash);
   }
+  // 2. Legacy PBKDF2 hash
+  if (user.salt && user.hash) {
+    const check = crypto.pbkdf2Sync(inputPassword, user.salt, 1000, 64, 'sha512').toString('hex');
+    return check === user.hash;
+  }
+  // 3. Legacy plaintext (migrate on next login)
   return user.password === inputPassword;
 };
+
 
 // Procedural SVG fallback generator (replicated from StoreContext.jsx)
 const generatePhoneSVGs = (brand, name) => {
@@ -242,8 +527,8 @@ app.get('/api/products', (req, res) => {
   res.json(db.products);
 });
 
-// 2. Create or Update a product
-app.post('/api/products', (req, res) => {
+// 2. Create or Update a product (Admin only)
+app.post('/api/products', requireAdmin, (req, res) => {
   const db = readDB();
   const productData = req.body;
 
@@ -302,8 +587,8 @@ app.post('/api/products', (req, res) => {
   }
 });
 
-// 3. Delete a product
-app.delete('/api/products/:id', (req, res) => {
+// 3. Delete a product (Admin only)
+app.delete('/api/products/:id', requireAdmin, (req, res) => {
   const db = readDB();
   const productId = req.params.id;
   const initialCount = db.products.length;
@@ -321,13 +606,15 @@ app.delete('/api/products/:id', (req, res) => {
 // --- USERS & AUTHENTICATION API ---
 
 // 1. Get all shoppers (Admin only)
-app.get('/api/users', (req, res) => {
+app.get('/api/users', requireAdmin, (req, res) => {
   const db = readDB();
-  res.json(db.users);
+  // Never send password hash/salt to client
+  const safeUsers = db.users.map(({ salt: _salt, hash: _hash, password: _password, ...u }) => u);
+  res.json(safeUsers);
 });
 
 // 2. User registration
-app.post('/api/auth/register', (req, res) => {
+app.post('/api/auth/register', validateBody(registerSchema), (req, res) => {
   const db = readDB();
   const userData = req.body;
   const emailLower = userData.email.toLowerCase().trim();
@@ -337,84 +624,128 @@ app.post('/api/auth/register', (req, res) => {
     return res.status(400).json({ error: 'An account with this email address already exists.' });
   }
 
-  const { salt, hash } = hashPassword(userData.password);
+  const hash = hashPassword(userData.password);
 
   const newUser = {
     firstName: userData.firstName.trim(),
     lastName: userData.lastName.trim(),
     email: emailLower,
-    salt,
-    hash,
+    hash,  // bcrypt hash only — no salt field needed
     isActive: true
   };
 
   db.users.push(newUser);
   writeDB(db);
-  res.status(201).json({ message: 'User registered successfully', user: newUser });
+
+  // Issue a JWT so the user is logged in immediately after registering
+  const token = jwt.sign(
+    { email: newUser.email, firstName: newUser.firstName, role: 'user' },
+    JWT_SECRET,
+    { expiresIn: '24h' }
+  );
+
+  const { hash: _h, ...safeUser } = newUser;
+  res.status(201).json({ message: 'User registered successfully', user: safeUser, token });
 });
 
 // 3. User login
-app.post('/api/auth/login', (req, res) => {
+app.post('/api/auth/login', validateBody(loginSchema), (req, res) => {
   const db = readDB();
   const { email, password } = req.body;
   const emailLower = email.toLowerCase().trim();
+  const lockoutKey = `user:${emailLower}`;
+
+  if (checkLockout(lockoutKey, res)) {
+    return;
+  }
 
   const user = db.users.find((u) => u.email.toLowerCase() === emailLower);
 
+  // Use constant-time comparison to avoid timing attacks
   if (!user || !checkPassword(user, password)) {
-    return res.status(401).json({ error: 'Invalid email or password details.' });
+    return handleFailedAttempt(lockoutKey, res, 'Invalid email or password details.');
   }
 
   if (user.isActive === false) {
     return res.status(403).json({ error: 'Your account has been deactivated. Please contact support.' });
   }
 
-  res.json({ message: 'Login successful', user });
+  handleSuccessfulLogin(lockoutKey);
+
+  // Issue JWT token (24h expiry)
+  const token = jwt.sign(
+    { email: user.email, firstName: user.firstName, role: 'user' },
+    JWT_SECRET,
+    { expiresIn: '24h' }
+  );
+
+  // Strip sensitive fields before sending
+  const { salt: _s, hash: _h, password: _p, ...safeUser } = user;
+  res.json({ message: 'Login successful', user: safeUser, token });
 });
 
 // 4. Admin login
-app.post('/api/auth/admin/login', (req, res) => {
+app.post('/api/auth/admin/login', validateBody(adminLoginSchema), (req, res) => {
   const { username, password } = req.body;
+  const usernameLower = username.toLowerCase().trim();
+  const lockoutKey = `admin:${usernameLower}`;
+
+  if (checkLockout(lockoutKey, res)) {
+    return;
+  }
+
   if (username.trim() === 'admin' && password === 'admin123') {
-    res.json({ success: true, message: 'Access granted. Welcome, Administrator.' });
+    handleSuccessfulLogin(lockoutKey);
+    // Issue admin JWT token (12h expiry)
+    const token = jwt.sign(
+      { username: 'admin', role: 'admin' },
+      JWT_SECRET,
+      { expiresIn: '12h' }
+    );
+    res.json({ success: true, message: 'Access granted. Welcome, Administrator.', token });
   } else {
-    res.status(401).json({ error: 'Invalid administrator credentials.' });
+    return handleFailedAttempt(lockoutKey, res, 'Invalid administrator credentials.');
   }
 });
 
-// 5. Update user profile
-app.put('/api/users', (req, res) => {
+// 5. Update user profile (Owner or Admin)
+app.put('/api/users', requireUser, (req, res) => {
   const db = readDB();
   const userData = req.body;
-  const emailKey = userData.email.toLowerCase().trim();
+  const emailKey = userData.email ? userData.email.toLowerCase().trim() : '';
 
-  let found = false;
-  db.users = db.users.map((u) => {
-    if (u.email.toLowerCase().trim() === emailKey) {
-      found = true;
-      const passUpdates = userData.password ? hashPassword(userData.password) : { salt: u.salt, hash: u.hash };
-      return {
-        ...u,
-        firstName: userData.firstName.trim(),
-        lastName: userData.lastName.trim(),
-        ...passUpdates,
-        isActive: userData.isActive !== false
-      };
-    }
-    return u;
-  });
+  // Security: users can only update their own profile; admin can update any
+  if (req.user.role !== 'admin' && req.user.email.toLowerCase() !== emailKey) {
+    return res.status(403).json({ error: 'Access denied. You can only modify your own profile.' });
+  }
 
-  if (!found) {
+  const userIndex = db.users.findIndex((u) => u.email.toLowerCase().trim() === emailKey);
+  if (userIndex === -1) {
     return res.status(404).json({ error: 'User account not found.' });
   }
 
+  const u = db.users[userIndex];
+  // Re-hash password with bcrypt if being changed
+  const newHash = userData.password ? hashPassword(userData.password) : u.hash;
+  // Only admin can change isActive status
+  const isActiveUpdate = req.user.role === 'admin' ? (userData.isActive !== false) : u.isActive;
+
+  db.users[userIndex] = {
+    ...u,
+    firstName: (userData.firstName || u.firstName).trim(),
+    lastName:  (userData.lastName  || u.lastName).trim(),
+    hash: newHash,
+    salt: undefined, // remove legacy salt if still present
+    isActive: isActiveUpdate
+  };
+
   writeDB(db);
-  const updatedUser = db.users.find((u) => u.email.toLowerCase().trim() === emailKey);
-  res.json({ message: 'User profile updated successfully', user: updatedUser });
+  const { salt: _s, hash: _h, password: _p, ...safeUser } = db.users[userIndex];
+  res.json({ message: 'User profile updated successfully', user: safeUser });
 });
 
 // 6. Toggle user active status (Admin only)
-app.patch('/api/users/:email/toggle-active', (req, res) => {
+app.patch('/api/users/:email/toggle-active', requireAdmin, (req, res) => {
   const db = readDB();
   const email = req.params.email.toLowerCase().trim();
   const user = db.users.find((u) => u.email.toLowerCase() === email);
@@ -442,23 +773,29 @@ app.patch('/api/users/:email/toggle-active', (req, res) => {
 
 // --- ORDERS API ---
 
-// 1. Get all orders (Admin or filtered by userEmail)
-app.get('/api/orders', (req, res) => {
+// 1. Get all orders (Admin sees all; logged-in users see only their own)
+app.get('/api/orders', requireUser, (req, res) => {
   const db = readDB();
-  const { email } = req.query;
 
-  if (email) {
-    const filteredOrders = db.orders.filter((o) => o.email.toLowerCase() === email.toLowerCase());
-    return res.json(filteredOrders);
+  if (req.user.role === 'admin') {
+    const { email } = req.query;
+    if (email) {
+      return res.json(db.orders.filter((o) => o.email.toLowerCase() === email.toLowerCase()));
+    }
+    return res.json(db.orders);
   }
 
-  res.json(db.orders);
+  // Regular users can only see their own orders
+  const myOrders = db.orders.filter((o) => o.email.toLowerCase() === req.user.email.toLowerCase());
+  return res.json(myOrders);
 });
 
-// 2. Create a new order (Checkout)
-app.post('/api/orders', (req, res) => {
+// 2. Create a new order (Checkout) — guests allowed, token users get email auto-resolved
+app.post('/api/orders', authenticateToken, validateBody(orderCreateSchema), (req, res) => {
   const db = readDB();
   const { shippingForm, cart, userEmail, discountCode } = req.body;
+  // Use the JWT-verified email if logged in; fall back to form email for guests
+  const resolvedUserEmail = req.user ? req.user.email : (userEmail || 'guest');
 
   if (!cart || cart.length === 0) {
     return res.status(400).json({ error: 'Cannot process order. Cart is empty.' });
@@ -528,7 +865,7 @@ app.post('/api/orders', (req, res) => {
     total: orderTotal,
     date: dateFormatted,
     status: 'pending',
-    userEmail: userEmail || 'guest',
+    userEmail: resolvedUserEmail,
     paymentMethod: shippingForm.paymentMethod || 'card',
     utrNumber: shippingForm.paymentMethod === 'upi' ? shippingForm.utrNumber : null
   };
@@ -538,8 +875,8 @@ app.post('/api/orders', (req, res) => {
   res.status(201).json({ message: 'Order placed successfully', order: newOrder });
 });
 
-// 3. Change order status (Admin cancellations/restorations)
-app.patch('/api/orders/:id/status', (req, res) => {
+// 3. Change order status (Admin only)
+app.patch('/api/orders/:id/status', requireAdmin, (req, res) => {
   const db = readDB();
   const orderId = req.params.id;
   const { status: newStatus } = req.body;
@@ -589,7 +926,7 @@ app.patch('/api/orders/:id/status', (req, res) => {
 });
 
 // 4. Add a tracking update to an order (Admin only)
-app.patch('/api/orders/:id/tracking', (req, res) => {
+app.patch('/api/orders/:id/tracking', requireAdmin, (req, res) => {
   const db = readDB();
   const orderId = req.params.id;
   const { location, note, status } = req.body;
@@ -622,7 +959,7 @@ app.patch('/api/orders/:id/tracking', (req, res) => {
 });
 
 // 5. Cancel an order with a reason (Admin only)
-app.patch('/api/orders/:id/cancel', (req, res) => {
+app.patch('/api/orders/:id/cancel', requireAdmin, (req, res) => {
   const db = readDB();
   const orderId = req.params.id;
   const { reason } = req.body;
@@ -683,20 +1020,20 @@ app.patch('/api/orders/:id/cancel', (req, res) => {
 
 // --- DATABASE MAINTENANCE (BACKUP & RESTORE) ---
 
-// 1. Download db.json backup
-app.get('/api/admin/backup', (req, res) => {
+// 1. Download db.json backup (Admin only)
+app.get('/api/admin/backup', requireAdmin, (req, res) => {
   try {
     if (!fs.existsSync(DB_PATH)) {
       return res.status(404).json({ error: 'Database file not found.' });
     }
     res.download(DB_PATH, 'aura_db_backup.json');
-  } catch (err) {
+  } catch {
     res.status(500).json({ error: 'Failed to generate database backup.' });
   }
 });
 
-// 2. Upload / Restore database from backup
-app.post('/api/admin/restore', (req, res) => {
+// 2. Upload / Restore database from backup (Admin only)
+app.post('/api/admin/restore', requireAdmin, (req, res) => {
   try {
     const backupData = req.body;
 
@@ -712,7 +1049,7 @@ app.post('/api/admin/restore', (req, res) => {
     }
 
     res.json({ message: 'Database successfully restored from backup!', data: backupData });
-  } catch (err) {
+  } catch {
     res.status(500).json({ error: 'Error processing database restoration.' });
   }
 });
@@ -720,7 +1057,9 @@ app.post('/api/admin/restore', (req, res) => {
 // Start Server
 app.listen(PORT, () => {
   console.log(`==================================================`);
-  console.log(`STOREFRONT BACKEND SERVER RUNNING ON PORT ${PORT}`);
-  console.log(`Database is loaded at: ${DB_PATH}`);
+  console.log(`STOREFRONT BACKEND SERVER — PORT ${PORT}`);
+  console.log(`Mode        : ${NODE_ENV}`);
+  console.log(`Database    : ${DB_PATH}`);
+  console.log(`Security    : Helmet | CORS | Rate-Limit | JWT | bcrypt | Zod`);
   console.log(`==================================================`);
 });

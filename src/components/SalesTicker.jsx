@@ -7,15 +7,17 @@ export const SalesTicker = () => {
   const { products } = useStore();
   const [ticker, setTicker] = useState(null);
 
-  const shopperNames = ['Arjun', 'Priya', 'Amit', 'Neha', 'Vikram', 'Anjali', 'Deepak', 'Sneha', 'Rahul', 'Ritu'];
-  const indianCities = ['Mumbai', 'Delhi', 'Bangalore', 'Hyderabad', 'Chennai', 'Pune', 'Kolkata', 'Ahmedabad', 'Jaipur', 'Lucknow'];
+// Static data moved outside component to avoid exhaustive-deps warnings
+const SHOPPER_NAMES = ['Arjun', 'Priya', 'Amit', 'Neha', 'Vikram', 'Anjali', 'Deepak', 'Sneha', 'Rahul', 'Ritu'];
+const INDIAN_CITIES = ['Mumbai', 'Delhi', 'Bangalore', 'Hyderabad', 'Chennai', 'Pune', 'Kolkata', 'Ahmedabad', 'Jaipur', 'Lucknow'];
+
 
   useEffect(() => {
     if (products.length === 0) return;
 
     const runTicker = () => {
-      const name = shopperNames[Math.floor(Math.random() * shopperNames.length)];
-      const city = indianCities[Math.floor(Math.random() * indianCities.length)];
+      const name = SHOPPER_NAMES[Math.floor(Math.random() * SHOPPER_NAMES.length)];
+      const city = INDIAN_CITIES[Math.floor(Math.random() * INDIAN_CITIES.length)];
       const activeProducts = products.filter(p => p.brand !== 'Aura Accessories');
       if (activeProducts.length === 0) return;
       const product = activeProducts[Math.floor(Math.random() * activeProducts.length)];
@@ -35,6 +37,7 @@ export const SalesTicker = () => {
       clearTimeout(initialDelay);
       clearInterval(interval);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [products]);
 
   return (

@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef } from 'react';
 import { useStore } from '../context/StoreContext';
 import { X, Gift } from 'lucide-react';
 import { AnimatePresence } from 'framer-motion';
@@ -51,7 +51,7 @@ export const CouponSpinner = ({ isOpen, onClose }) => {
       try {
         navigator.clipboard.writeText(winningSegment.code);
         addToast(`Congratulations! Awarded coupon ${winningSegment.code} (copied to clipboard).`, 'success');
-      } catch (err) {
+      } catch {
         addToast(`Congratulations! Awarded coupon ${winningSegment.code}.`, 'success');
       }
 

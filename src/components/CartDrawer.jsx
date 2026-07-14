@@ -43,7 +43,7 @@ const adjustSvgColors = (svgString, colorName) => {
 };
 
 export const CartDrawer = ({ isOpen, onClose }) => {
-  const { cart, products, updateCartQuantity, removeFromCart, switchView } = useStore();
+  const { cart, products, updateCartQuantity, removeFromCart, switchView, savedForLater, saveForLater, moveToCart, removeFromSavedForLater } = useStore();
 
   const getItemPrice = (item, phone) => {
     if (!phone) return 0;
@@ -183,12 +183,130 @@ export const CartDrawer = ({ isOpen, onClose }) => {
                             <Trash2 width="18" height="18" />
                           </button>
                         </div>
+                        <button
+                          onClick={() => saveForLater(phone.id, item.storage, item.color)}
+                          style={{
+                            background: 'none',
+                            border: 'none',
+                            color: 'var(--primary, #6366f1)',
+                            fontSize: '0.72rem',
+                            fontWeight: '600',
+                            cursor: 'pointer',
+                            padding: 0,
+                            marginTop: '0.45rem',
+                            textDecoration: 'underline',
+                            textAlign: 'left',
+                            display: 'inline-block'
+                          }}
+                        >
+                          Save for Later
+                        </button>
                       </div>
                     </motion.div>
                   );
                 })
               )}
             </div>
+
+            {/* Saved for Later list */}
+            {savedForLater && savedForLater.length > 0 && (
+              <div style={{
+                marginTop: '2rem',
+                paddingTop: '1.5rem',
+                borderTop: '1.5px dashed rgba(255, 255, 255, 0.08)',
+                paddingLeft: '1.5rem',
+                paddingRight: '1.5rem',
+                paddingBottom: '1.5rem'
+              }}>
+                <h4 style={{
+                  fontSize: '0.85rem',
+                  fontWeight: 700,
+                  color: '#fff',
+                  marginBottom: '1rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.4rem'
+                }}>
+                  Saved for Later ({savedForLater.length})
+                </h4>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                  {savedForLater.map((item, idx) => {
+                    const phone = products.find((p) => p.id === item.productId);
+                    if (!phone) return null;
+                    const itemPrice = getItemPrice(item, phone);
+                    const customColorImg = (phone.colorImages && phone.colorImages[item.color] && phone.colorImages[item.color][0]) 
+                      ? phone.colorImages[item.color][0] 
+                      : phone.images[0];
+                    
+                    return (
+                      <div
+                        key={`${item.productId}-${idx}`}
+                        style={{
+                          display: 'flex',
+                          gap: '0.85rem',
+                          background: 'rgba(255, 255, 255, 0.02)',
+                          border: '1px solid rgba(255, 255, 255, 0.04)',
+                          borderRadius: '12px',
+                          padding: '0.75rem',
+                          alignItems: 'center'
+                        }}
+                      >
+                        <div style={{ width: '46px', height: '46px', flexShrink: 0, overflow: 'hidden', background: 'rgba(255, 255, 255, 0.02)', borderRadius: '8px' }}>
+                          <ProductImage 
+                            src={phone.brand === 'Aura Accessories' ? phone.images[0] : adjustSvgColors(customColorImg, item.color)} 
+                            alt={phone.name} 
+                            color={phone.brand === 'Aura Accessories' ? undefined : item.color}
+                          />
+                        </div>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <h5 style={{ fontSize: '0.78rem', fontWeight: 700, color: '#fff', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{phone.name}</h5>
+                          {phone.brand !== 'Aura Accessories' && (
+                            <div style={{ fontSize: '0.66rem', color: 'var(--text-muted, rgba(255,255,255,0.4))', marginTop: '0.05rem' }}>
+                              {item.storage} • {item.color}
+                            </div>
+                          )}
+                          <div style={{ fontSize: '0.76rem', fontWeight: 600, color: 'var(--primary, #6366f1)', marginTop: '0.1rem' }}>{formatINR(itemPrice)}</div>
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', alignItems: 'flex-end' }}>
+                          <button
+                            onClick={() => moveToCart(item.productId, item.storage, item.color)}
+                            style={{
+                              background: 'linear-gradient(135deg, #6366f1, #a855f7)',
+                              border: 'none',
+                              color: '#fff',
+                              fontSize: '0.66rem',
+                              fontWeight: 700,
+                              borderRadius: '6px',
+                              padding: '0.35rem 0.65rem',
+                              cursor: 'pointer',
+                              boxShadow: '0 2px 8px rgba(99, 102, 241, 0.25)',
+                              whiteSpace: 'nowrap'
+                            }}
+                          >
+                            Move to Cart
+                          </button>
+                          <button
+                            onClick={() => removeFromSavedForLater(item.productId, item.storage, item.color)}
+                            style={{
+                              background: 'none',
+                              border: 'none',
+                              color: 'var(--accent-red, #f43f5e)',
+                              fontSize: '0.64rem',
+                              fontWeight: 600,
+                              cursor: 'pointer',
+                              padding: 0,
+                              textDecoration: 'underline'
+                            }}
+                          >
+                            Remove
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
 
             {cart.length > 0 && (
               <div className="cart-footer" id="cart-footer-summary">

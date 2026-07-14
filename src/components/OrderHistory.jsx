@@ -2,7 +2,7 @@ import React from 'react';
 import { useStore } from '../context/StoreContext';
 import { formatINR } from '../utils/currency';
 import { motion } from 'framer-motion';
-import { ShoppingBag, Calendar, Package, ArrowRight, Truck, MapPin, Search } from 'lucide-react';
+import { ShoppingBag, Calendar, Package, ArrowRight, Truck, MapPin } from 'lucide-react';
 
 const STATUS_COLORS = {
   pending:    { color: '#f59e0b', bg: 'rgba(245,158,11,0.12)', border: 'rgba(245,158,11,0.25)' },

@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import { useStore } from '../context/StoreContext';
 import { motion } from 'framer-motion';
-import { User, ShoppingBag, Heart, TrendingUp, Package, ChevronRight, Award, Truck } from 'lucide-react';
+import { User, ShoppingBag, Heart, TrendingUp, Package, Award, Truck } from 'lucide-react';
 import { formatINR } from '../utils/currency';
 import { ProductImage } from './ProductImage';
 

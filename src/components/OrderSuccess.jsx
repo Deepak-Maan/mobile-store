@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useStore } from '../context/StoreContext';
 import { motion } from 'framer-motion';
-import { Check, Clipboard, ClipboardCheck, ArrowRight, ShieldCheck, Mail, MapPin } from 'lucide-react';
+import { Check, Clipboard, ClipboardCheck, ArrowRight, ShieldCheck, Mail } from 'lucide-react';
 import { formatINR } from '../utils/currency';
 
 export const OrderSuccess = () => {
