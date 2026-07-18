@@ -105,14 +105,17 @@ export const AnalyticsTab = () => {
   const { orders, products, registeredUsers } = useStore();
 
   const stats = useMemo(() => {
-    const totalRevenue = orders.reduce((s, o) => s + (o.total || 0), 0);
-    const totalOrders = orders.length;
+    // Exclude cancelled orders to align with Dashboard calculation
+    const activeOrders = orders.filter(o => o.status !== 'cancelled');
+
+    const totalRevenue = activeOrders.reduce((s, o) => s + (o.total || 0), 0);
+    const totalOrders = activeOrders.length;
     const avgOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
     const totalUsers = (registeredUsers || []).length;
 
     // Brand revenue breakdown
     const brandRevenue = {};
-    orders.forEach(o => {
+    activeOrders.forEach(o => {
       (o.items || []).forEach(item => {
         const prod = products.find(p => p.id === item.productId);
         const brand = prod?.brand || item.brand || 'Other';
@@ -122,7 +125,7 @@ export const AnalyticsTab = () => {
 
     // Top products by units sold
     const productSales = {};
-    orders.forEach(o => {
+    activeOrders.forEach(o => {
       (o.items || []).forEach(item => {
         const key = item.productId || item.name;
         if (!productSales[key]) {
@@ -142,15 +145,21 @@ export const AnalyticsTab = () => {
       const d = new Date(today);
       d.setDate(today.getDate() - (6 - i));
       const label = days[d.getDay()];
-      const dateStr = d.toISOString().slice(0, 10);
-      const revenue = orders
-        .filter(o => (o.createdAt || o.date || '').slice(0, 10) === dateStr)
+      const targetDateStr = d.toLocaleDateString('en-US');
+      const revenue = activeOrders
+        .filter(o => {
+          try {
+            return new Date(o.createdAt || o.date).toLocaleDateString('en-US') === targetDateStr;
+          } catch {
+            return false;
+          }
+        })
         .reduce((s, o) => s + (o.total || 0), 0);
       return { label, revenue };
     });
 
     // Low stock products
-    const lowStock = products.filter(p => p.stock > 0 && p.stock <= 3);
+    const lowStock = products.filter(p => p.stock > 0 && p.stock < 5);
     const outOfStock = products.filter(p => p.stock === 0);
 
     return { totalRevenue, totalOrders, avgOrderValue, totalUsers, brandRevenue, topProducts, dailyData, lowStock, outOfStock };

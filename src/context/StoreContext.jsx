@@ -30,6 +30,33 @@ export const StoreProvider = ({ children }) => {
   const [userToken, setUserToken] = useState(null);
   const [adminToken, setAdminToken] = useState(null);
 
+  const [clientIPInfo, setClientIPInfo] = useState({
+    ip: '127.0.0.1',
+    city: 'Local Host',
+    country: 'Local Network',
+    countryCode: 'IN'
+  });
+
+  useEffect(() => {
+    const fetchGeoIP = async () => {
+      try {
+        const res = await fetch('https://ipapi.co/json/');
+        if (res.ok) {
+          const data = await res.json();
+          setClientIPInfo({
+            ip: data.ip || '127.0.0.1',
+            city: data.city || 'Local Host',
+            country: data.country_name || 'Local Network',
+            countryCode: data.country_code || 'IN'
+          });
+        }
+      } catch (err) {
+        console.warn('GeoIP fetch failed:', err);
+      }
+    };
+    fetchGeoIP();
+  }, []);
+
   const handleAuthFailure = () => {
     const isUser = !!sessionStorage.getItem('mobile_store_active_user');
     const isAdmin = !!sessionStorage.getItem('mobile_store_admin_active');
@@ -75,6 +102,7 @@ export const StoreProvider = ({ children }) => {
   const [adminPanel, setAdminPanel] = useState('dashboard');
   const [selectedProductId, setSelectedProductId] = useState(null);
   const [trackingOrderId, setTrackingOrderId] = useState('');
+  const [isAuthOpen, setIsAuthOpen] = useState(false);
   
   // Filtering state
   const [brandFilter, setBrandFilter] = useState('All');
@@ -279,7 +307,12 @@ export const StoreProvider = ({ children }) => {
     try {
       const res = await fetch(`${API_BASE}/auth/register`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'x-client-ip': clientIPInfo.ip,
+          'x-client-city': clientIPInfo.city,
+          'x-client-country': clientIPInfo.country
+        },
         body: JSON.stringify(userData)
       });
       const data = await res.json();
@@ -308,7 +341,12 @@ export const StoreProvider = ({ children }) => {
     try {
       const res = await fetch(`${API_BASE}/auth/login`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'x-client-ip': clientIPInfo.ip,
+          'x-client-city': clientIPInfo.city,
+          'x-client-country': clientIPInfo.country
+        },
         body: JSON.stringify({ email, password })
       });
       const data = await res.json();
@@ -426,14 +464,56 @@ export const StoreProvider = ({ children }) => {
     try {
       const res = await fetch(`${API_BASE}/auth/admin/login`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'x-client-ip': clientIPInfo.ip,
+          'x-client-city': clientIPInfo.city,
+          'x-client-country': clientIPInfo.country
+        },
         body: JSON.stringify({ username, password })
       });
       const data = await res.json();
 
       if (!res.ok) {
         addToast(data.error || 'Invalid administrator credentials.', 'error');
-        return false;
+        return { success: false, error: data.error };
+      }
+
+      if (data.require2FA) {
+        return { success: true, require2FA: true };
+      }
+
+      setIsAdminLoggedIn(true);
+      setAdminToken(data.token);
+      sessionStorage.setItem('mobile_store_admin_active', JSON.stringify(true));
+      sessionStorage.setItem('mobile_store_admin_token', data.token);
+      addToast('Access granted. Welcome, Administrator.', 'success');
+      await fetchUsers(data.token);
+      await fetchOrders(data.token);
+      return { success: true };
+    } catch {
+      addToast('Server connection error during administrator login.', 'error');
+      return { success: false, error: 'Connection error' };
+    }
+  };
+
+  const verifyAdmin2FA = async (username, code) => {
+    try {
+      const res = await fetch(`${API_BASE}/auth/admin/verify-2fa`, {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'x-client-ip': clientIPInfo.ip,
+          'x-client-city': clientIPInfo.city,
+          'x-client-country': clientIPInfo.country
+        },
+        body: JSON.stringify({ username, code })
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        addToast(data.error || 'Invalid 2FA verification code.', 'error');
+        return { success: false, error: data.error };
       }
 
       setIsAdminLoggedIn(true);
@@ -442,13 +522,12 @@ export const StoreProvider = ({ children }) => {
       sessionStorage.setItem('mobile_store_admin_token', data.token);
       addToast('Access granted. Welcome, Administrator.', 'success');
       
-      // Load administrative data using token directly
       await fetchUsers(data.token);
       await fetchOrders(data.token);
-      return true;
+      return { success: true };
     } catch {
-      addToast('Server connection error during administrator login.', 'error');
-      return false;
+      addToast('Server connection error during 2FA verification.', 'error');
+      return { success: false, error: 'Connection error' };
     }
   };
 
@@ -945,6 +1024,8 @@ export const StoreProvider = ({ children }) => {
         isAdminLoggedIn,
         trackingOrderId,
         setTrackingOrderId,
+        isAuthOpen,
+        setIsAuthOpen,
         
         switchView,
         switchAdminPanel,
@@ -975,9 +1056,11 @@ export const StoreProvider = ({ children }) => {
         loginUser,
         logoutUser,
         loginAdmin,
+        verifyAdmin2FA,
         logoutAdmin,
         saveUser,
-        toggleUserActive
+        toggleUserActive,
+        clientIPInfo
       }}
     >
       {children}

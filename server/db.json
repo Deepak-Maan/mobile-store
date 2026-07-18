@@ -1,11 +1,25 @@
 {
+  "securitySettings": {
+    "ipWhitelistEnabled": false,
+    "whitelistedIPs": [
+      "127.0.0.1",
+      "::1"
+    ],
+    "geofencingEnabled": false,
+    "blockedCountries": [
+      "CN",
+      "KP",
+      "RU"
+    ],
+    "twoFactorSecret": "KVKVEV2JKREU2UKKKBJE4V2KGNGEOT2L"
+  },
   "products": [
     {
       "id": "phone-1",
       "name": "iPhone 15 Pro",
       "brand": "Apple",
       "price": 1,
-      "stock": 8,
+      "stock": 7,
       "description": "Experience the ultimate titanium design, featuring the groundbreaking A17 Pro chip, a customizable Action button, and the most powerful iPhone camera system ever.",
       "specs": {
         "display": "6.1\" Super Retina XDR OLED, 120Hz",
@@ -328,7 +342,7 @@
       ],
       "total": 1,
       "date": "Jul 6, 2026",
-      "status": "cancelled",
+      "status": "shipped",
       "userEmail": "deepakmaan525@gmail.com",
       "paymentMethod": "upi",
       "utrNumber": "655349702265",
@@ -344,11 +358,290 @@
           "location": "Order Management",
           "note": "Order cancelled. Reason: due to location cjhanfe",
           "status": "cancelled"
+        },
+        {
+          "timestamp": "2026-07-18T15:43:14.793Z",
+          "location": "Order Management",
+          "note": "Order advanced to pending",
+          "status": "pending"
+        },
+        {
+          "timestamp": "2026-07-18T15:43:45.423Z",
+          "location": "Order Management",
+          "note": "Order advanced to processing",
+          "status": "processing"
+        },
+        {
+          "timestamp": "2026-07-18T15:43:59.164Z",
+          "location": "Order Management",
+          "note": "Order advanced to packed",
+          "status": "packed"
+        },
+        {
+          "timestamp": "2026-07-18T15:44:06.729Z",
+          "location": "Order Management",
+          "note": "Order advanced to shipped",
+          "status": "shipped"
         }
       ],
       "cancelReason": "due to location cjhanfe",
       "cancelledAt": "8 Jul 2026",
-      "refundDate": "15 Jul 2026"
+      "refundDate": "15 Jul 2026",
+      "fulfillmentStatus": "shipped"
+    },
+    {
+      "id": "ORD-385022",
+      "customerName": "Deepak Maan",
+      "email": "deepakmaan525@gmail.com",
+      "phone": "+917496850133",
+      "address": "hisar, Hisar, 125001",
+      "items": [
+        {
+          "id": "phone-1",
+          "name": "iPhone 15 Pro",
+          "brand": "Apple",
+          "price": 1,
+          "quantity": 1,
+          "storage": "",
+          "color": ""
+        }
+      ],
+      "total": 1,
+      "date": "Jul 14, 2026",
+      "status": "shipped",
+      "userEmail": "guest",
+      "paymentMethod": "upi",
+      "utrNumber": "619597378799",
+      "trackingUpdates": [
+        {
+          "timestamp": "2026-07-14T16:45:56.274Z",
+          "location": "tt",
+          "note": "hg",
+          "status": "processing"
+        },
+        {
+          "timestamp": "2026-07-14T17:04:01.491Z",
+          "location": "hisar",
+          "note": "",
+          "status": "shipped"
+        },
+        {
+          "timestamp": "2026-07-18T15:43:34.749Z",
+          "location": "Order Management",
+          "note": "Order reverted to packed",
+          "status": "packed"
+        },
+        {
+          "timestamp": "2026-07-18T15:43:39.955Z",
+          "location": "Order Management",
+          "note": "Order advanced to shipped",
+          "status": "shipped"
+        }
+      ],
+      "fulfillmentStatus": "shipped"
     }
+  ],
+  "logs": [
+    {
+      "id": "LOG-973153",
+      "timestamp": "2026-07-14T17:14:52.303Z",
+      "action": "ADMIN_LOGIN",
+      "details": "Administrator logged in successfully via console",
+      "ipAddress": "127.0.0.1",
+      "user": "admin",
+      "status": "success"
+    },
+    {
+      "id": "LOG-467385",
+      "timestamp": "2026-07-14T17:20:22.889Z",
+      "action": "ADMIN_LOGIN",
+      "details": "Administrator logged in successfully via console",
+      "ipAddress": "127.0.0.1",
+      "user": "admin",
+      "status": "success"
+    },
+    {
+      "id": "LOG-251499",
+      "timestamp": "2026-07-14T17:24:32.700Z",
+      "action": "ADMIN_LOGIN",
+      "details": "Administrator logged in successfully via console",
+      "ipAddress": "127.0.0.1",
+      "user": "admin",
+      "status": "success"
+    },
+    {
+      "id": "LOG-159538",
+      "timestamp": "2026-07-14T17:27:23.329Z",
+      "action": "ADMIN_LOGIN",
+      "details": "Administrator logged in successfully via console",
+      "ipAddress": "127.0.0.1",
+      "user": "admin",
+      "status": "success"
+    },
+    {
+      "id": "LOG-285363",
+      "timestamp": "2026-07-18T15:03:37.901Z",
+      "action": "ADMIN_LOGIN_2FA_SUCCESS",
+      "details": "Administrator logged in successfully after 2FA validation",
+      "ipAddress": "127.0.0.1",
+      "user": "admin",
+      "status": "success"
+    },
+    {
+      "id": "LOG-804660",
+      "timestamp": "2026-07-18T15:28:39.512Z",
+      "action": "ADMIN_LOGIN_2FA_FAIL",
+      "details": "Invalid 2FA code entry: \"123456\"",
+      "ipAddress": "2409:40d6:e2:b428:347b:6fd5:74c9:2215",
+      "location": "Jagadhri, India",
+      "user": "admin",
+      "status": "success"
+    },
+    {
+      "id": "LOG-727938",
+      "timestamp": "2026-07-18T15:29:08.980Z",
+      "action": "ADMIN_LOGIN_2FA_SUCCESS",
+      "details": "Administrator logged in successfully after 2FA validation",
+      "ipAddress": "2409:40d6:e2:b428:347b:6fd5:74c9:2215",
+      "location": "Jagadhri, India",
+      "user": "admin",
+      "status": "success"
+    },
+    {
+      "id": "LOG-911031",
+      "timestamp": "2026-07-18T15:32:15.864Z",
+      "action": "SYSTEM_MAINTENANCE",
+      "details": "Purged static server page-cache and temporary buffers",
+      "ipAddress": "127.0.0.1",
+      "location": "Local Loopback",
+      "user": "admin",
+      "status": "success"
+    },
+    {
+      "id": "LOG-235815",
+      "timestamp": "2026-07-18T15:32:19.625Z",
+      "action": "SYSTEM_MAINTENANCE",
+      "details": "Optimized database indexes and compacted JSON stores",
+      "ipAddress": "127.0.0.1",
+      "location": "Local Loopback",
+      "user": "admin",
+      "status": "success"
+    },
+    {
+      "id": "LOG-926362",
+      "timestamp": "2026-07-18T15:32:23.656Z",
+      "action": "SYSTEM_DIAGNOSTICS",
+      "details": "Diagnostic network benchmark completed: Latency 10ms",
+      "ipAddress": "127.0.0.1",
+      "location": "Local Loopback",
+      "user": "admin",
+      "status": "success"
+    },
+    {
+      "id": "LOG-660830",
+      "timestamp": "2026-07-18T15:32:29.461Z",
+      "action": "SYSTEM_MAINTENANCE",
+      "details": "Optimized database indexes and compacted JSON stores",
+      "ipAddress": "127.0.0.1",
+      "location": "Local Loopback",
+      "user": "admin",
+      "status": "success"
+    },
+    {
+      "id": "LOG-416793",
+      "timestamp": "2026-07-18T15:32:32.414Z",
+      "action": "SYSTEM_MAINTENANCE",
+      "details": "Optimized database indexes and compacted JSON stores",
+      "ipAddress": "127.0.0.1",
+      "location": "Local Loopback",
+      "user": "admin",
+      "status": "success"
+    },
+    {
+      "id": "LOG-647661",
+      "timestamp": "2026-07-18T15:32:34.626Z",
+      "action": "SYSTEM_MAINTENANCE",
+      "details": "Optimized database indexes and compacted JSON stores",
+      "ipAddress": "127.0.0.1",
+      "location": "Local Loopback",
+      "user": "admin",
+      "status": "success"
+    },
+    {
+      "id": "LOG-385308",
+      "timestamp": "2026-07-18T15:43:14.804Z",
+      "action": "ORDER_STATUS_UPDATE",
+      "details": "Order #ORD-644395 moved to pending by admin",
+      "ipAddress": "127.0.0.1",
+      "location": "Local Loopback",
+      "user": "admin",
+      "status": "success"
+    },
+    {
+      "id": "LOG-574342",
+      "timestamp": "2026-07-18T15:43:34.766Z",
+      "action": "ORDER_STATUS_UPDATE",
+      "details": "Order #ORD-385022 moved to packed by admin",
+      "ipAddress": "127.0.0.1",
+      "location": "Local Loopback",
+      "user": "admin",
+      "status": "success"
+    },
+    {
+      "id": "LOG-461505",
+      "timestamp": "2026-07-18T15:43:39.971Z",
+      "action": "ORDER_STATUS_UPDATE",
+      "details": "Order #ORD-385022 moved to shipped by admin",
+      "ipAddress": "127.0.0.1",
+      "location": "Local Loopback",
+      "user": "admin",
+      "status": "success"
+    },
+    {
+      "id": "LOG-262059",
+      "timestamp": "2026-07-18T15:43:45.428Z",
+      "action": "ORDER_STATUS_UPDATE",
+      "details": "Order #ORD-644395 moved to processing by admin",
+      "ipAddress": "127.0.0.1",
+      "location": "Local Loopback",
+      "user": "admin",
+      "status": "success"
+    },
+    {
+      "id": "LOG-328399",
+      "timestamp": "2026-07-18T15:43:59.167Z",
+      "action": "ORDER_STATUS_UPDATE",
+      "details": "Order #ORD-644395 moved to packed by admin",
+      "ipAddress": "127.0.0.1",
+      "location": "Local Loopback",
+      "user": "admin",
+      "status": "success"
+    },
+    {
+      "id": "LOG-524597",
+      "timestamp": "2026-07-18T15:44:06.741Z",
+      "action": "ORDER_STATUS_UPDATE",
+      "details": "Order #ORD-644395 moved to shipped by admin",
+      "ipAddress": "127.0.0.1",
+      "location": "Local Loopback",
+      "user": "admin",
+      "status": "success"
+    },
+    {
+      "id": "LOG-623255",
+      "timestamp": "2026-07-18T16:09:35.561Z",
+      "action": "SYSTEM_MAINTENANCE",
+      "details": "Optimized database indexes and compacted JSON stores",
+      "ipAddress": "127.0.0.1",
+      "location": "Local Loopback",
+      "user": "admin",
+      "status": "success"
+    }
+  ],
+  "dismissedNotifications": [
+    "stock-low-phone-2",
+    "stock-low-phone-5",
+    "stock-low-phone-8",
+    "stock-low-phone-10"
   ]
 }

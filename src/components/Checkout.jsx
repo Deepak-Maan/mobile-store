@@ -25,6 +25,43 @@ export const Checkout = ({ onOpenAuth }) => {
   const [appliedDiscount, setAppliedDiscount] = useState({ code: '', percentage: 0, amount: 0 });
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
   const [paymentHandshakeStep, setPaymentHandshakeStep] = useState(0);
+  const [biometricStep, setBiometricStep] = useState('idle'); // 'idle', 'scanning', 'success', 'done'
+
+  const startBiometricScan = () => {
+    setBiometricStep('scanning');
+    
+    // Simulate laser scanning sweep
+    setTimeout(() => {
+      setBiometricStep('success');
+      
+      // Complete scan and transition to database creation
+      setTimeout(() => {
+        setBiometricStep('done');
+        setPaymentHandshakeStep(1);
+
+        setTimeout(() => {
+          setPaymentHandshakeStep(2);
+        }, 850);
+
+        setTimeout(() => {
+          setPaymentHandshakeStep(3);
+        }, 1700);
+
+        setTimeout(() => {
+          setPaymentHandshakeStep(4);
+        }, 2550);
+
+        setTimeout(async () => {
+          const success = await processOrder(form, appliedDiscount.code);
+          if (!success) {
+            setIsProcessingPayment(false);
+            setPaymentHandshakeStep(0);
+            setBiometricStep('idle');
+          }
+        }, 3200);
+      }, 1000);
+    }, 2200);
+  };
 
   const handleApplyCoupon = (e) => {
     e.preventDefault();
@@ -109,28 +146,38 @@ export const Checkout = ({ onOpenAuth }) => {
   const handleSubmit = (e) => {
     e.preventDefault();
     setIsProcessingPayment(true);
-    setPaymentHandshakeStep(1);
-
+    setBiometricStep('idle');
+    setPaymentHandshakeStep(0);
+    // Start scanning auto trigger
     setTimeout(() => {
-      setPaymentHandshakeStep(2);
-    }, 850);
-
-    setTimeout(() => {
-      setPaymentHandshakeStep(3);
-    }, 1700);
-
-    setTimeout(() => {
-      setPaymentHandshakeStep(4);
-    }, 2550);
-
-    setTimeout(async () => {
-      const success = await processOrder(form, appliedDiscount.code);
-      if (!success) {
-        setIsProcessingPayment(false);
-        setPaymentHandshakeStep(0);
-      }
-    }, 3200);
+      startBiometricScan();
+    }, 400);
   };
+
+  if (!currentUser) {
+    return (
+      <section id="checkout-view" className="view-section active">
+        <div className="checkout-container" style={{ textAlign: 'center', padding: '5rem 0', maxWidth: '480px', margin: '0 auto' }}>
+          <h3 style={{ fontSize: '1.5rem', fontWeight: 800, marginBottom: '1rem', color: '#fff' }}>Login Required for Purchase</h3>
+          <p style={{ color: 'var(--text-secondary)', marginBottom: '2rem', lineHeight: 1.6 }}>
+            You must be logged in to access secure checkout lanes, track shipment status, and store purchase invoices.
+          </p>
+          <button 
+            type="button" 
+            className="btn" 
+            onClick={onOpenAuth}
+            style={{ 
+              padding: '0.8rem 2rem', fontWeight: '700', borderRadius: '10px',
+              background: 'linear-gradient(135deg, var(--primary), var(--secondary))',
+              border: 'none', color: '#fff', cursor: 'pointer'
+            }}
+          >
+            Sign In / Sign Up
+          </button>
+        </div>
+      </section>
+    );
+  }
 
   if (cart.length === 0) {
     return (
@@ -538,31 +585,122 @@ export const Checkout = ({ onOpenAuth }) => {
       </div>
       {/* Simulated Payment Handshake Modal Overlay */}
       {isProcessingPayment && (
-        <div className="payment-handshake-overlay">
-          <div className="payment-handshake-box">
-            <div className="payment-handshake-spinner"></div>
-            <h3>Securing Safe Checkout</h3>
-            <p className="payment-handshake-subtitle">Please do not refresh the page or close your browser</p>
-            
-            <div className="payment-handshake-steps-list">
-              <div className={`handshake-step-item ${paymentHandshakeStep >= 1 ? 'active' : ''} ${paymentHandshakeStep > 1 ? 'completed' : ''}`}>
-                <div className="step-check">{paymentHandshakeStep > 1 ? '✓' : '1'}</div>
-                <span>Opening secure transaction tunnel…</span>
+        <div className="payment-handshake-overlay" style={{
+          position: 'fixed', inset: 0, background: 'rgba(5, 5, 8, 0.95)',
+          backdropFilter: 'blur(20px)', zIndex: 1000,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          padding: '1.5rem',
+        }}>
+          {biometricStep !== 'done' ? (
+            <div className="payment-handshake-box" style={{
+              background: '#0e0e13', border: '1px solid rgba(99, 102, 241, 0.25)',
+              borderRadius: '24px', padding: '2.5rem 2rem', maxWidth: '440px', width: '100%',
+              textAlign: 'center', boxShadow: '0 25px 60px rgba(0,0,0,0.8), 0 0 40px rgba(99, 102, 241, 0.1)',
+              position: 'relative', overflow: 'hidden',
+            }}>
+              {/* Scan grid animation in background */}
+              <div style={{
+                position: 'absolute', inset: 0,
+                backgroundImage: 'radial-gradient(circle, rgba(99, 102, 241, 0.04) 1px, transparent 1px)',
+                backgroundSize: '20px 20px', zIndex: 0, pointerEvents: 'none'
+              }} />
+
+              {/* Title & Status */}
+              <div style={{ position: 'relative', zIndex: 1 }}>
+                <span style={{
+                  color: biometricStep === 'success' ? '#10b981' : '#6366f1',
+                  fontSize: '0.8rem', fontWeight: 800, textTransform: 'uppercase',
+                  letterSpacing: '2px', display: 'block', marginBottom: '0.5rem'
+                }}>
+                  {biometricStep === 'idle' && 'Biometric Verification Required'}
+                  {biometricStep === 'scanning' && 'Scanning Biometric Signature'}
+                  {biometricStep === 'success' && 'Biometric Verified Successfully'}
+                </span>
+                <h3 style={{ fontSize: '1.4rem', fontWeight: 950, color: '#fff', margin: '0 0 1.5rem', letterSpacing: '-0.5px' }}>
+                  {biometricStep === 'success' ? 'Identity Authorized' : 'Secure Order Authorization'}
+                </h3>
               </div>
-              <div className={`handshake-step-item ${paymentHandshakeStep >= 2 ? 'active' : ''} ${paymentHandshakeStep > 2 ? 'completed' : ''}`}>
-                <div className="step-check">{paymentHandshakeStep > 2 ? '✓' : '2'}</div>
-                <span>Authenticating with payment gateway…</span>
+
+              {/* Fingerprint Scanner Interactive Icon */}
+              <div style={{
+                position: 'relative', width: '120px', height: '120px', margin: '0 auto 2rem',
+                borderRadius: '50%', background: 'rgba(255,255,255,0.02)',
+                border: biometricStep === 'success' ? '2.5px solid #10b981' : '2px dashed rgba(99,102,241,0.3)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                boxShadow: biometricStep === 'success'
+                  ? '0 0 35px rgba(16, 185, 129, 0.25)'
+                  : (biometricStep === 'scanning' ? '0 0 30px rgba(99,102,241,0.2)' : 'none'),
+                transition: 'all 0.4s ease', zIndex: 1,
+              }}>
+                {/* Glowing Laser Scan Bar */}
+                {biometricStep === 'scanning' && (
+                  <div style={{
+                    position: 'absolute', left: '10%', right: '10%', height: '3px',
+                    background: 'linear-gradient(90deg, transparent, #6366f1, #a78bfa, #6366f1, transparent)',
+                    boxShadow: '0 0 10px #6366f1, 0 0 20px #a78bfa',
+                    borderRadius: '2px', zIndex: 2,
+                    animation: 'biometricSweep 1.1s ease-in-out infinite alternate',
+                  }} />
+                )}
+
+                {/* Fingerprint Vector SVG */}
+                <svg viewBox="0 0 24 24" width="60" height="60" fill="none" stroke={biometricStep === 'success' ? '#10b981' : '#6366f1'} strokeWidth="1.5" strokeLinecap="round" style={{ transition: 'stroke 0.4s ease' }}>
+                  <path d="M12 2a10 10 0 0 0-10 10" />
+                  <path d="M12 6a6 6 0 0 0-6 6" />
+                  <path d="M12 10a2 2 0 0 0-2 2" />
+                  <path d="M12 14c2.2 0 4-1.8 4-4s-1.8-4-4-4" />
+                  <path d="M12 18c4.4 0 8-3.6 8-8s-3.6-8-8-8" />
+                  <path d="M12 22c6.6 0 12-5.4 12-12S18.6-2 12-2" />
+                  <path d="M12 10v4" />
+                  {biometricStep === 'success' && <path d="M9 12l2 2 4-4" stroke="#10b981" strokeWidth="2" />}
+                </svg>
               </div>
-              <div className={`handshake-step-item ${paymentHandshakeStep >= 3 ? 'active' : ''} ${paymentHandshakeStep > 3 ? 'completed' : ''}`}>
-                <div className="step-check">{paymentHandshakeStep > 3 ? '✓' : '3'}</div>
-                <span>Verifying stock reservations…</span>
-              </div>
-              <div className={`handshake-step-item ${paymentHandshakeStep >= 4 ? 'active' : ''}`}>
-                <div className="step-check">{paymentHandshakeStep >= 4 ? '✓' : '4'}</div>
-                <span>Creating order receipt invoice…</span>
+
+              {/* Status Details */}
+              <div style={{ position: 'relative', zIndex: 1 }}>
+                <p style={{ color: 'rgba(255,255,255,0.45)', fontSize: '0.82rem', margin: '0 0 1.5rem', lineHeight: 1.5 }}>
+                  {biometricStep === 'idle' && 'Initializing hardware authenticator...'}
+                  {biometricStep === 'scanning' && 'Verifying unique device owner fingerprint credentials against secure enclaves...'}
+                  {biometricStep === 'success' && 'Encryption signature matched. Transferring to transactional banking networks...'}
+                </p>
+                <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center', alignItems: 'center' }}>
+                  <span style={{
+                    width: '6px', height: '6px', borderRadius: '50%',
+                    background: biometricStep === 'success' ? '#10b981' : '#6366f1',
+                    animation: biometricStep === 'scanning' ? 'pulse 0.8s infinite alternate' : 'none'
+                  }} />
+                  <span style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.3)', fontWeight: 'bold' }}>
+                    SECURE ENCLAVE 256-AES
+                  </span>
+                </div>
               </div>
             </div>
-          </div>
+          ) : (
+            <div className="payment-handshake-box">
+              <div className="payment-handshake-spinner"></div>
+              <h3>Securing Safe Checkout</h3>
+              <p className="payment-handshake-subtitle">Please do not refresh the page or close your browser</p>
+              
+              <div className="payment-handshake-steps-list">
+                <div className={`handshake-step-item ${paymentHandshakeStep >= 1 ? 'active' : ''} ${paymentHandshakeStep > 1 ? 'completed' : ''}`}>
+                  <div className="step-check">{paymentHandshakeStep > 1 ? '✓' : '1'}</div>
+                  <span>Opening secure transaction tunnel…</span>
+                </div>
+                <div className={`handshake-step-item ${paymentHandshakeStep >= 2 ? 'active' : ''} ${paymentHandshakeStep > 2 ? 'completed' : ''}`}>
+                  <div className="step-check">{paymentHandshakeStep > 2 ? '✓' : '2'}</div>
+                  <span>Authenticating with payment gateway…</span>
+                </div>
+                <div className={`handshake-step-item ${paymentHandshakeStep >= 3 ? 'active' : ''} ${paymentHandshakeStep > 3 ? 'completed' : ''}`}>
+                  <div className="step-check">{paymentHandshakeStep > 3 ? '✓' : '3'}</div>
+                  <span>Verifying stock reservations…</span>
+                </div>
+                <div className={`handshake-step-item ${paymentHandshakeStep >= 4 ? 'active' : ''}`}>
+                  <div className="step-check">{paymentHandshakeStep >= 4 ? '✓' : '4'}</div>
+                  <span>Creating order receipt invoice…</span>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       )}
     </section>

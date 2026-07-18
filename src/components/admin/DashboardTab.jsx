@@ -30,10 +30,10 @@ export const DashboardTab = () => {
 
   // 1. Calculate General Numbers
   const nonCancelledOrders = orders.filter((o) => o.status !== 'cancelled');
-  const totalRevenue = nonCancelledOrders.reduce((sum, order) => sum + order.total, 0);
-  const totalOrdersCount = orders.length;
+  const totalRevenue = nonCancelledOrders.reduce((sum, order) => sum + (order.total || 0), 0);
+  const totalOrdersCount = nonCancelledOrders.length;
   const uniqueDevicesCount = products.length;
-  const lowStockAlertsCount = products.filter((p) => p.stock < 5).length;
+  const lowStockAlertsCount = products.filter((p) => p.stock > 0 && p.stock < 5).length;
 
 
   // 2. Animate Monthly Sales Bar Chart

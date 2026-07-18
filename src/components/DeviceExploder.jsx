@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { motion, useScroll, useTransform } from 'framer-motion';
+import { motion, useScroll, useTransform, useSpring } from 'framer-motion';
 
 export const DeviceExploder = () => {
   const containerRef = useRef(null);
@@ -17,44 +17,62 @@ export const DeviceExploder = () => {
     offset: ['start end', 'end start'],
   });
 
+  // Smooth scroll progress using spring physics
+  const smoothProgress = useSpring(scrollYProgress, {
+    stiffness: 85,
+    damping: 24,
+    restDelta: 0.001
+  });
+
   // Mobile: lighter explosion offsets so layers don't fly off screen
   const layer1Y = useTransform(
-    scrollYProgress,
+    smoothProgress,
     [0.1, 0.65],
     isMobile ? [0, -110] : [0, -160]
   );
   const layer2Y = useTransform(
-    scrollYProgress,
+    smoothProgress,
     [0.1, 0.65],
     isMobile ? [0, -50] : [0, -70]
   );
   const layer3Y = useTransform(
-    scrollYProgress,
+    smoothProgress,
     [0.1, 0.65],
     isMobile ? [0, 30] : [0, 40]
   );
   const layer4Y = useTransform(
-    scrollYProgress,
+    smoothProgress,
     [0.1, 0.65],
     isMobile ? [0, 90] : [0, 130]
   );
 
   // Reduce perspective tilt on mobile
   const rotX = useTransform(
-    scrollYProgress,
+    smoothProgress,
     [0, 0.5, 1],
     isMobile ? [25, 12, 0] : [40, 20, 0]
   );
   const rotZ = useTransform(
-    scrollYProgress,
+    smoothProgress,
     [0, 0.5, 1],
     isMobile ? [-8, -3, 0] : [-15, -5, 0]
   );
   const sectionScale = useTransform(
-    scrollYProgress,
+    smoothProgress,
     [0, 0.5],
     isMobile ? [0.85, 1] : [0.8, 1]
   );
+
+  // Auto loop states for mobile screens (assembled vs exploded loop)
+  const [isExploded, setIsExploded] = useState(false);
+
+  useEffect(() => {
+    if (!isMobile) return;
+    const timer = setInterval(() => {
+      setIsExploded(prev => !prev);
+    }, 3200);
+    return () => clearInterval(timer);
+  }, [isMobile]);
 
   // Scale device layers for mobile
   const layerScale = isMobile ? 0.68 : 1;
@@ -63,7 +81,7 @@ export const DeviceExploder = () => {
 
   const layers = [
     {
-      w: 240, h: 480, y: layer1Y, zIndex: 10, radius: '32px',
+      w: 240, h: 480, y: isMobile ? (isExploded ? -95 : 0) : layer1Y, zIndex: 10, radius: '32px',
       border: '2px solid rgba(255,255,255,0.38)',
       bg: 'linear-gradient(135deg, rgba(255,255,255,0.09), rgba(255,255,255,0.01))',
       extra: 'blur(3px)',
@@ -73,21 +91,21 @@ export const DeviceExploder = () => {
       sublabelColor: '#818cf8',
     },
     {
-      w: 220, h: 440, y: layer2Y, zIndex: 8, radius: '28px',
+      w: 220, h: 440, y: isMobile ? (isExploded ? -35 : 0) : layer2Y, zIndex: 8, radius: '28px',
       border: '2px solid rgba(129,140,248,0.32)',
       bg: 'rgba(10, 15, 30, 0.92)',
       shadow: '0 15px 35px rgba(99,102,241,0.18)',
       chip: true,
     },
     {
-      w: 210, h: 430, y: layer3Y, zIndex: 6, radius: '24px',
+      w: 210, h: 430, y: isMobile ? (isExploded ? 25 : 0) : layer3Y, zIndex: 6, radius: '24px',
       border: '1.5px solid rgba(255,255,255,0.09)',
       bg: 'linear-gradient(180deg, #1c1917, #0c0a09)',
       shadow: '0 10px 25px rgba(0,0,0,0.55)',
       battery: true,
     },
     {
-      w: 230, h: 470, y: layer4Y, zIndex: 4, radius: '30px',
+      w: 230, h: 470, y: isMobile ? (isExploded ? 85 : 0) : layer4Y, zIndex: 4, radius: '30px',
       border: '3px solid #4b5563',
       bg: 'linear-gradient(135deg, #1f2937, #111827)',
       shadow: '0 25px 60px rgba(0,0,0,0.75)',
@@ -142,12 +160,13 @@ export const DeviceExploder = () => {
             justifyContent: 'center',
             height: isMobile ? '420px' : '650px',
             transformStyle: 'preserve-3d',
-            rotateX: rotX,
-            rotateZ: rotZ,
-            scale: sectionScale,
+            rotateX: isMobile ? (isExploded ? 16 : 8) : rotX,
+            rotateZ: isMobile ? (isExploded ? -4 : -1) : rotZ,
+            scale: isMobile ? (isExploded ? 0.98 : 0.93) : sectionScale,
             position: 'relative',
             order: isMobile ? 1 : 0,
           }}
+          transition={{ type: 'spring', stiffness: 70, damping: 18 }}
         >
           {layers.map((l, i) => (
             <motion.div
@@ -173,6 +192,7 @@ export const DeviceExploder = () => {
                 boxSizing: 'border-box',
                 gap: '0.75rem',
               }}
+              transition={{ type: 'spring', stiffness: 65, damping: 17 }}
             >
               {/* Glass label */}
               {l.label && (

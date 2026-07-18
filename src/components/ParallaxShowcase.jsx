@@ -1,7 +1,7 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { motion, useScroll, useTransform } from 'framer-motion';
+import { motion, useScroll, useTransform, useSpring } from 'framer-motion';
 import { useStore } from '../context/StoreContext';
-import { Cpu, Sun, Camera, ShieldCheck } from 'lucide-react';
+import { Cpu, Sun, Camera } from 'lucide-react';
 import { formatINR } from '../utils/currency';
 
 export const ParallaxShowcase = () => {
@@ -21,27 +21,62 @@ export const ParallaxShowcase = () => {
     offset: ['start end', 'end start'],
   });
 
+  // Smooth scroll progress using spring physics
+  const smoothProgress = useSpring(scrollYProgress, {
+    stiffness: 85,
+    damping: 24,
+    restDelta: 0.001
+  });
+
   // --- Scroll animations logic ---
   // Background moves slowly
-  const bgY = useTransform(scrollYProgress, [0, 1], ['0%', '-15%']);
-  const bgScale = useTransform(scrollYProgress, [0, 0.5, 1], [1, 1.15, 1.05]);
+  const bgY = useTransform(smoothProgress, [0, 1], ['0%', '-15%']);
+  const bgScale = useTransform(smoothProgress, [0, 0.5, 1], [1, 1.15, 1.05]);
 
   // Large typography sliding in opposite directions
-  const textLeftX = useTransform(scrollYProgress, [0.1, 0.9], isMobile ? [-80, 50] : [-300, 150]);
-  const textRightX = useTransform(scrollYProgress, [0.1, 0.9], isMobile ? [80, -50] : [300, -150]);
-  const textOpacity = useTransform(scrollYProgress, [0, 0.2, 0.8, 1], [0, 1, 1, 0]);
+  const textLeftX = useTransform(smoothProgress, [0.1, 0.9], isMobile ? [-80, 50] : [-300, 150]);
+  const textRightX = useTransform(smoothProgress, [0.1, 0.9], isMobile ? [80, -50] : [300, -150]);
+  const textOpacity = useTransform(smoothProgress, [0, 0.2, 0.8, 1], [0, 1, 1, 0]);
 
   // Phone Mockups floating at different speeds and rotations
-  const phoneLeftY = useTransform(scrollYProgress, [0, 1], isMobile ? [120, -60] : [200, -120]);
-  const phoneLeftRotate = useTransform(scrollYProgress, [0, 1], [15, -12]);
+  const phoneLeftY = useTransform(smoothProgress, [0, 1], isMobile ? [120, -60] : [200, -120]);
+  const phoneLeftRotate = useTransform(smoothProgress, [0, 1], [15, -12]);
   
-  const phoneRightY = useTransform(scrollYProgress, [0, 1], isMobile ? [180, -120] : [320, -220]);
-  const phoneRightRotate = useTransform(scrollYProgress, [0, 1], [-22, 10]);
+  const phoneRightY = useTransform(smoothProgress, [0, 1], isMobile ? [180, -120] : [320, -220]);
+  const phoneRightRotate = useTransform(smoothProgress, [0, 1], [-22, 10]);
 
   // Floating spec cards
-  const spec1Y = useTransform(scrollYProgress, [0.1, 0.9], [220, -180]);
-  const spec2Y = useTransform(scrollYProgress, [0.15, 0.85], [350, -150]);
-  const spec3Y = useTransform(scrollYProgress, [0.2, 0.95], [280, -260]);
+  const spec1Y = useTransform(smoothProgress, [0.1, 0.9], [220, -180]);
+  const spec2Y = useTransform(smoothProgress, [0.15, 0.85], [350, -150]);
+  const spec3Y = useTransform(smoothProgress, [0.2, 0.95], [280, -260]);
+
+  // Mobile spec auto-cycle and background text drift
+  const [activeSpecIndex, setActiveSpecIndex] = useState(0);
+  const [drift, setDrift] = useState(0);
+
+  useEffect(() => {
+    if (!isMobile) return;
+
+    // Cycle active card every 2.8s
+    const cycleTimer = setInterval(() => {
+      setActiveSpecIndex(prev => (prev + 1) % 3);
+    }, 2800);
+
+    // Oscillation loop for background text drift
+    let animId;
+    const start = Date.now();
+    const updateDrift = () => {
+      const elapsed = (Date.now() - start) * 0.0008; // slow speed multiplier
+      setDrift(Math.sin(elapsed * Math.PI) * 0.5 + 0.5); // ranges 0 to 1
+      animId = requestAnimationFrame(updateDrift);
+    };
+    animId = requestAnimationFrame(updateDrift);
+
+    return () => {
+      clearInterval(cycleTimer);
+      cancelAnimationFrame(animId);
+    };
+  }, [isMobile]);
 
   // Find premium devices to show
   const premiumPhones = products.filter(p => p.brand !== 'Aura Accessories').slice(0, 2);
@@ -125,8 +160,8 @@ export const ParallaxShowcase = () => {
         >
           <motion.h2
             style={{
-              x: textLeftX,
-              opacity: textOpacity,
+              x: isMobile ? (drift * 140 - 70) : textLeftX,
+              opacity: isMobile ? 0.95 : textOpacity,
               fontSize: isMobile ? 'clamp(3rem, 12vw, 5rem)' : 'clamp(6rem, 10vw, 11rem)',
               fontWeight: 900,
               fontFamily: 'var(--font-display)',
@@ -142,8 +177,8 @@ export const ParallaxShowcase = () => {
 
           <motion.h2
             style={{
-              x: textRightX,
-              opacity: textOpacity,
+              x: isMobile ? ((1 - drift) * 140 - 70) : textRightX,
+              opacity: isMobile ? 0.95 : textOpacity,
               fontSize: isMobile ? 'clamp(3rem, 12vw, 5rem)' : 'clamp(6rem, 10vw, 11rem)',
               fontWeight: 900,
               fontFamily: 'var(--font-display)',
@@ -309,17 +344,21 @@ export const ParallaxShowcase = () => {
               position: 'absolute',
               top: '25%',
               left: isMobile ? '5%' : '15%',
-              y: spec1Y,
+              y: isMobile ? (activeSpecIndex === 0 ? -15 : 0) : spec1Y,
               background: 'rgba(15, 15, 25, 0.65)',
-              border: '1px solid rgba(255, 255, 255, 0.1)',
+              border: isMobile
+                ? (activeSpecIndex === 0 ? '1.5px solid rgba(99, 102, 241, 0.6)' : '1px solid rgba(255, 255, 255, 0.1)')
+                : '1px solid rgba(255, 255, 255, 0.1)',
               backdropFilter: 'blur(16px)',
               borderRadius: '20px',
               padding: isMobile ? '0.8rem 1rem' : '1.2rem 1.5rem',
               display: 'flex',
               alignItems: 'center',
               gap: '1rem',
-              boxShadow: '0 20px 40px rgba(0,0,0,0.4)',
+              boxShadow: isMobile && activeSpecIndex === 0 ? '0 10px 25px rgba(99,102,241,0.25)' : '0 20px 40px rgba(0,0,0,0.4)',
+              opacity: isMobile ? (activeSpecIndex === 0 ? 1 : 0.35) : 1,
             }}
+            transition={{ type: 'spring', stiffness: 85, damping: 20 }}
           >
             <div style={{
               background: 'rgba(99, 102, 241, 0.15)',
@@ -346,17 +385,21 @@ export const ParallaxShowcase = () => {
               bottom: '22%',
               left: '50%',
               translateX: '-50%',
-              y: spec2Y,
+              y: isMobile ? (activeSpecIndex === 1 ? -15 : 0) : spec2Y,
               background: 'rgba(15, 15, 25, 0.65)',
-              border: '1px solid rgba(255, 255, 255, 0.1)',
+              border: isMobile
+                ? (activeSpecIndex === 1 ? '1.5px solid rgba(236, 72, 153, 0.6)' : '1px solid rgba(255, 255, 255, 0.1)')
+                : '1px solid rgba(255, 255, 255, 0.1)',
               backdropFilter: 'blur(16px)',
               borderRadius: '20px',
               padding: isMobile ? '0.8rem 1rem' : '1.2rem 1.5rem',
               display: 'flex',
               alignItems: 'center',
               gap: '1rem',
-              boxShadow: '0 20px 40px rgba(0,0,0,0.4)',
+              boxShadow: isMobile && activeSpecIndex === 1 ? '0 10px 25px rgba(236,72,153,0.25)' : '0 20px 40px rgba(0,0,0,0.4)',
+              opacity: isMobile ? (activeSpecIndex === 1 ? 1 : 0.35) : 1,
             }}
+            transition={{ type: 'spring', stiffness: 85, damping: 20 }}
           >
             <div style={{
               background: 'rgba(236, 72, 153, 0.15)',
@@ -382,17 +425,21 @@ export const ParallaxShowcase = () => {
               position: 'absolute',
               top: '30%',
               right: isMobile ? '5%' : '15%',
-              y: spec3Y,
+              y: isMobile ? (activeSpecIndex === 2 ? -15 : 0) : spec3Y,
               background: 'rgba(15, 15, 25, 0.65)',
-              border: '1px solid rgba(255, 255, 255, 0.1)',
+              border: isMobile
+                ? (activeSpecIndex === 2 ? '1.5px solid rgba(52, 211, 153, 0.6)' : '1px solid rgba(255, 255, 255, 0.1)')
+                : '1px solid rgba(255, 255, 255, 0.1)',
               backdropFilter: 'blur(16px)',
               borderRadius: '20px',
               padding: isMobile ? '0.8rem 1rem' : '1.2rem 1.5rem',
               display: 'flex',
               alignItems: 'center',
               gap: '1rem',
-              boxShadow: '0 20px 40px rgba(0,0,0,0.4)',
+              boxShadow: isMobile && activeSpecIndex === 2 ? '0 10px 25px rgba(52,211,153,0.25)' : '0 20px 40px rgba(0,0,0,0.4)',
+              opacity: isMobile ? (activeSpecIndex === 2 ? 1 : 0.35) : 1,
             }}
+            transition={{ type: 'spring', stiffness: 85, damping: 20 }}
           >
             <div style={{
               background: 'rgba(52, 211, 153, 0.15)',

@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { motion, useScroll, useTransform, useMotionValue, useSpring } from 'framer-motion';
+import { motion, useScroll, useTransform, AnimatePresence } from 'framer-motion';
 import { createRipple } from '../utils/ripple';
+import { DecryptedText } from './DecryptedText';
 
 /* ─── Floating Particle Field (canvas) ─── */
 const ParticleField = () => {
@@ -81,16 +82,18 @@ const ParticleField = () => {
     };
     const onLeave = () => { mouse.x = -999; mouse.y = -999; };
 
+    const parent = canvas.parentElement;
     resize();
     window.addEventListener('resize', resize);
     window.addEventListener('mousemove', onMove);
-    canvas.parentElement?.addEventListener('mouseleave', onLeave);
+    parent?.addEventListener('mouseleave', onLeave);
     draw();
 
     return () => {
       cancelAnimationFrame(id);
       window.removeEventListener('resize', resize);
       window.removeEventListener('mousemove', onMove);
+      parent?.removeEventListener('mouseleave', onLeave);
     };
   }, []);
 
@@ -105,128 +108,6 @@ const ParticleField = () => {
     />
   );
 };
-
-/* ─── 3D Phone Mockup ─── */
-const PhoneMockup = ({ rotX, rotY }) => (
-  <motion.div
-    style={{
-      width: '220px',
-      height: '440px',
-      rotateX: rotX,
-      rotateY: rotY,
-      transformStyle: 'preserve-3d',
-      position: 'relative',
-    }}
-  >
-    {/* Body */}
-    <div style={{
-      position: 'absolute', inset: 0,
-      borderRadius: '36px',
-      background: 'linear-gradient(145deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)',
-      border: '1.5px solid rgba(255,255,255,0.18)',
-      boxShadow: '0 40px 100px rgba(0,0,0,0.7), inset 0 1px 0 rgba(255,255,255,0.12)',
-      overflow: 'hidden',
-    }}>
-      {/* Screen glow */}
-      <div style={{
-        position: 'absolute', inset: '8px',
-        borderRadius: '28px',
-        background: 'linear-gradient(135deg, #0f0c29, #302b63, #24243e)',
-        overflow: 'hidden',
-        display: 'flex', flexDirection: 'column',
-        alignItems: 'center',
-      }}>
-        {/* Notch */}
-        <div style={{
-          width: '60px', height: '6px', background: '#000',
-          borderRadius: '3px', marginTop: '10px',
-        }} />
-        {/* Screen content */}
-        <div style={{
-          flex: 1, width: '100%',
-          display: 'flex', flexDirection: 'column',
-          alignItems: 'center', justifyContent: 'center',
-          padding: '1rem', boxSizing: 'border-box',
-          gap: '0.6rem',
-        }}>
-          {/* App icon grid mock */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '6px', width: '100%' }}>
-            {['#6366f1','#ec4899','#10b981','#f59e0b','#3b82f6','#a855f7','#ef4444','#06b6d4'].map((c, i) => (
-              <div key={i} style={{
-                aspectRatio: '1', borderRadius: '8px',
-                background: `${c}cc`,
-                boxShadow: `0 2px 8px ${c}55`,
-              }} />
-            ))}
-          </div>
-          {/* Wallpaper aurora */}
-          <div style={{
-            width: '100%', height: '80px', borderRadius: '12px',
-            background: 'linear-gradient(90deg,#6366f1,#ec4899,#f59e0b)',
-            opacity: 0.35, filter: 'blur(8px)',
-          }} />
-          {/* Bottom bar */}
-          <div style={{ display: 'flex', gap: '16px', marginTop: '0.5rem' }}>
-            {['#6366f1','#fff','#ec4899'].map((c, i) => (
-              <div key={i} style={{
-                width: '28px', height: '28px', borderRadius: '50%',
-                background: `${c}22`, border: `1.5px solid ${c}66`,
-              }} />
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Camera island */}
-      <div style={{
-        position: 'absolute', top: '14px', right: '14px',
-        width: '28px', height: '44px', borderRadius: '10px',
-        background: 'rgba(0,0,0,0.7)',
-        display: 'flex', flexDirection: 'column',
-        alignItems: 'center', justifyContent: 'center', gap: '5px',
-      }}>
-        {[0,1,2].map((i) => (
-          <div key={i} style={{
-            width: '10px', height: '10px', borderRadius: '50%',
-            background: '#0a0a12',
-            border: `1.5px solid rgba(255,255,255,${0.15 + i * 0.05})`,
-            boxShadow: `0 0 4px rgba(129,140,248,0.3)`,
-          }} />
-        ))}
-      </div>
-
-      {/* Side reflection sheen */}
-      <div style={{
-        position: 'absolute', top: 0, left: '-10%',
-        width: '30%', height: '100%',
-        background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.04), transparent)',
-        transform: 'skewX(-8deg)',
-        pointerEvents: 'none',
-      }} />
-    </div>
-
-    {/* 3D Side depth */}
-    <div style={{
-      position: 'absolute', inset: 0,
-      borderRadius: '36px',
-      transform: 'translateZ(-8px)',
-      background: 'rgba(0,0,0,0.9)',
-      filter: 'blur(8px)',
-      zIndex: -1,
-    }} />
-
-    {/* Floor shadow */}
-    <div style={{
-      position: 'absolute',
-      bottom: '-30px', left: '50%', transform: 'translateX(-50%)',
-      width: '160px', height: '30px',
-      background: 'rgba(99,102,241,0.18)',
-      filter: 'blur(20px)',
-      borderRadius: '50%',
-      zIndex: -2,
-    }} />
-  </motion.div>
-);
 
 /* ─── Animated Stat Badge ─── */
 const Badge = ({ label, value, color, delay }) => (
@@ -251,7 +132,6 @@ const Badge = ({ label, value, color, delay }) => (
 );
 
 /* ─── Main Hero ─── */
-import { WebGLDisplacementSlider } from './WebGLDisplacementSlider';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 const HERO_SLIDES = [
@@ -441,7 +321,7 @@ export const Hero = ({ onExplore }) => {
               color: '#a5b4fc', letterSpacing: '1.5px',
               textTransform: 'uppercase',
             }}>
-              {activeSlide.brand} · Flagship Performance
+              <DecryptedText text={`${activeSlide.brand} · Flagship Performance`} speed={35} />
             </span>
           </motion.div>
 
@@ -465,16 +345,7 @@ export const Hero = ({ onExplore }) => {
                   margin: 0,
                 }}
               >
-                {activeSlide.name.split(' ')[0]}
-                <br />
-                <span style={{
-                  background: `linear-gradient(135deg, ${activeSlide.color} 0%, #c084fc 60%, #f472b6 100%)`,
-                  WebkitBackgroundClip: 'text',
-                  WebkitTextFillColor: 'transparent',
-                  display: 'inline-block',
-                }}>
-                  {activeSlide.name.split(' ').slice(1).join(' ')}
-                </span>
+                <DecryptedText text={activeSlide.name} speed={30} />
               </motion.h1>
             </AnimatePresence>
           </div>
@@ -620,8 +491,160 @@ export const Hero = ({ onExplore }) => {
               </button>
             )}
 
-            {/* WebGL Canvas */}
-            <WebGLDisplacementSlider activeIndex={activeIndex} slides={HERO_SLIDES} isMobile={isMobile} />
+            {/* Interactive HTML/CSS Mockup Phone */}
+            <div
+              style={{
+                position: 'relative',
+                width: isMobile ? '230px' : '315px',
+                height: isMobile ? '460px' : '630px',
+                borderRadius: '44px',
+                border: '4px solid rgba(255, 255, 255, 0.38)',
+                boxShadow: '0 45px 120px rgba(0,0,0,0.85), inset 0 2px 8px rgba(255,255,255,0.1)',
+                background: 'linear-gradient(135deg, rgba(20,21,26,0.98), rgba(10,10,14,0.99))',
+                overflow: 'hidden',
+                transformStyle: 'preserve-3d',
+                pointerEvents: 'none',
+              }}
+            >
+              {/* Screen viewport */}
+              <div style={{
+                position: 'absolute', inset: '4px',
+                borderRadius: '40px',
+                background: 'radial-gradient(circle at center, #0c0b1f 0%, #050508 100%)',
+                overflow: 'hidden',
+                display: 'flex', flexDirection: 'column',
+                border: '1px solid rgba(255,255,255,0.05)',
+              }}>
+                {/* Dynamic Island Notch */}
+                <div style={{
+                  position: 'absolute', top: '4px', left: '50%', transform: 'translateX(-50%)',
+                  width: '80px', height: '20px', background: '#000', borderRadius: '15px',
+                  border: '1px solid rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center',
+                  justifyContent: 'flex-end', paddingRight: '8px', zIndex: 30
+                }}>
+                  <div style={{ width: '4px', height: '4px', borderRadius: '50%', background: '#111' }} />
+                </div>
+
+                {/* Status Bar */}
+                <div style={{
+                  display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                  padding: '12px 20px 4px', fontSize: '9px', color: 'rgba(255,255,255,0.8)',
+                  fontWeight: '700', zIndex: 10, fontFamily: 'sans-serif'
+                }}>
+                  <span>10:09</span>
+                  <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
+                    <div style={{ display: 'flex', gap: '1.5px', alignItems: 'flex-end', height: '8px' }}>
+                      <div style={{ width: '2px', height: '3px', background: '#fff' }} />
+                      <div style={{ width: '2px', height: '5px', background: '#fff' }} />
+                      <div style={{ width: '2px', height: '7px', background: '#fff' }} />
+                      <div style={{ width: '2px', height: '9px', background: '#fff' }} />
+                    </div>
+                    <div style={{ width: '16px', height: '9px', border: '1px solid #fff', borderRadius: '2px', padding: '1px', display: 'flex' }}>
+                      <div style={{ flex: 1, background: '#10b981', borderRadius: '1px' }} />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Animated Inner Screen Content wrapper */}
+                <div style={{ flex: 1, position: 'relative', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', padding: '1.2rem 1rem 1.25rem', zIndex: 10 }}>
+                  <AnimatePresence mode="wait">
+                    <motion.div
+                      key={activeIndex}
+                      initial={{ opacity: 0, scale: 0.94, filter: 'blur(4px)' }}
+                      animate={{ opacity: 1, scale: 1, filter: 'blur(0px)' }}
+                      exit={{ opacity: 0, scale: 1.06, filter: 'blur(4px)' }}
+                      transition={{ duration: 0.45, ease: 'easeInOut' }}
+                      style={{
+                        position: 'absolute', inset: 0,
+                        display: 'flex', flexDirection: 'column',
+                        justifyContent: 'space-between',
+                        padding: '1.2rem 1rem 1.25rem',
+                        boxSizing: 'border-box'
+                      }}
+                    >
+                      {/* Ambient background glow inside screen */}
+                      <div style={{
+                        position: 'absolute', top: '10%', left: '-20%', width: '140%', height: '80%',
+                        background: `radial-gradient(circle, ${activeSlide.color}35 0%, transparent 70%)`,
+                        filter: 'blur(30px)',
+                        zIndex: -1,
+                        pointerEvents: 'none'
+                      }} />
+
+                      {/* Phone Brand Name */}
+                      <div style={{ textAlign: 'center', marginTop: '0.8rem' }}>
+                        <div style={{ fontSize: '9px', fontWeight: '800', letterSpacing: '4px', color: '#a5b4fc', textTransform: 'uppercase' }}>
+                          {activeSlide.brand}
+                        </div>
+                        <div style={{ fontSize: isMobile ? '15px' : '19px', fontWeight: '900', color: '#fff', letterSpacing: '1px', textShadow: '0 0 12px rgba(255,255,255,0.2)' }}>
+                          {activeSlide.name}
+                        </div>
+                      </div>
+
+                      {/* Concentric Neon core */}
+                      <div style={{
+                        position: 'relative', width: '100%', display: 'flex',
+                        alignItems: 'center', justifyContent: 'center', flex: 1
+                      }}>
+                        {/* Spinning rings */}
+                        <div style={{
+                          position: 'absolute', width: isMobile ? '100px' : '150px', height: isMobile ? '100px' : '150px', borderRadius: '50%',
+                          border: `1.5px dashed ${activeSlide.color}45`, animation: 'uhr-spin 9s linear infinite'
+                        }} />
+                        <div style={{
+                          position: 'absolute', width: isMobile ? '80px' : '120px', height: isMobile ? '80px' : '120px', borderRadius: '50%',
+                          border: '1px dashed rgba(255,255,255,0.18)', animation: 'uhr-spin-reverse 7s linear infinite'
+                        }} />
+                        {/* Central orb */}
+                        <div style={{
+                          width: isMobile ? '50px' : '72px', height: isMobile ? '50px' : '72px', borderRadius: '50%',
+                          background: `radial-gradient(circle at 30% 30%, #ffffff 0%, ${activeSlide.color} 55%, #05050f 100%)`,
+                          boxShadow: `0 0 35px ${activeSlide.color}90, inset -5px -5px 12px rgba(0,0,0,0.6)`
+                        }} />
+                      </div>
+
+                      {/* Price Widget */}
+                      <div style={{
+                        width: '100%', background: 'rgba(255, 255, 255, 0.03)',
+                        border: '1px solid rgba(255, 255, 255, 0.08)', borderRadius: '18px',
+                        padding: '0.75rem', backdropFilter: 'blur(10px)', textAlign: 'center',
+                        boxShadow: '0 10px 30px rgba(0,0,0,0.4)', boxSizing: 'border-box'
+                      }}>
+                        <div style={{ fontSize: '8px', color: 'rgba(255,255,255,0.45)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '1px' }}>
+                          Flagship Model
+                        </div>
+                        <div style={{ fontSize: isMobile ? '13px' : '16px', fontWeight: '800', color: '#fff', margin: '2px 0 5px' }}>
+                          {activeSlide.name === "iPhone 15 Pro" ? "₹1,34,900" :
+                           activeSlide.name === "Galaxy S24 Ultra" ? "₹1,09,915" :
+                           activeSlide.name === "Pixel 8 Pro" ? "₹93,999" :
+                           activeSlide.name === "OnePlus 12" ? "₹64,999" : "₹1,19,999"}
+                        </div>
+                        <div style={{
+                          width: '100%', padding: '0.45rem', borderRadius: '10px',
+                          background: `linear-gradient(90deg, ${activeSlide.color}, #f472b6)`,
+                          fontSize: '9.5px', fontWeight: '800', color: '#fff',
+                          boxShadow: `0 4px 14px ${activeSlide.color}45`, textAlign: 'center'
+                        }}>
+                          Buy Now
+                        </div>
+                      </div>
+                    </motion.div>
+                  </AnimatePresence>
+                </div>
+              </div>
+
+              {/* Spinning animation styles */}
+              <style dangerouslySetInnerHTML={{ __html: `
+                @keyframes uhr-spin {
+                  from { transform: rotate(0deg); }
+                  to   { transform: rotate(360deg); }
+                }
+                @keyframes uhr-spin-reverse {
+                  from { transform: rotate(360deg); }
+                  to   { transform: rotate(0deg); }
+                }
+              `}} />
+            </div>
 
             {/* Next Arrow */}
             {!isMobile && (

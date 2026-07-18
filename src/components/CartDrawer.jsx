@@ -43,7 +43,11 @@ const adjustSvgColors = (svgString, colorName) => {
 };
 
 export const CartDrawer = ({ isOpen, onClose }) => {
-  const { cart, products, updateCartQuantity, removeFromCart, switchView, savedForLater, saveForLater, moveToCart, removeFromSavedForLater } = useStore();
+  const { 
+    cart, products, updateCartQuantity, removeFromCart, switchView, 
+    savedForLater, saveForLater, moveToCart, removeFromSavedForLater,
+    currentUser, setIsAuthOpen, addToast
+  } = useStore();
 
   const getItemPrice = (item, phone) => {
     if (!phone) return 0;
@@ -62,6 +66,11 @@ export const CartDrawer = ({ isOpen, onClose }) => {
   }, 0);
 
   const handleCheckout = () => {
+    if (!currentUser) {
+      addToast('Sign In or Sign Up is required to proceed to checkout.', 'warning');
+      setIsAuthOpen(true);
+      return;
+    }
     onClose();
     switchView('checkout');
   };

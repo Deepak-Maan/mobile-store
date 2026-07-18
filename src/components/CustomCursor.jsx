@@ -2,16 +2,14 @@ import React, { useEffect, useState, useRef } from 'react';
 import gsap from 'gsap';
 
 export const CustomCursor = () => {
-  const dotRef = useRef(null);
-  const ringRef = useRef(null);
+  const dotRef  = useRef(null);
+  const hLineRef = useRef(null);
+  const vLineRef = useRef(null);
   const [isVisible, setIsVisible] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
   const [isClicked, setIsClicked] = useState(false);
 
   const mouseCoords = useRef({ x: 0, y: 0 });
-  const ringCoords = useRef({ x: 0, y: 0 });
-  const prevMouseCoords = useRef({ x: 0, y: 0 });
-  const activeHoverTarget = useRef(null);
 
   useEffect(() => {
     const isMobile = window.matchMedia('(pointer: coarse)').matches;
@@ -23,118 +21,44 @@ export const CustomCursor = () => {
       if (!isVisible) setIsVisible(true);
     };
 
-    const handleMouseLeaveWindow = () => setIsVisible(false);
-    const handleMouseEnterWindow = () => setIsVisible(true);
-    const handleMouseDown = () => setIsClicked(true);
-    const handleMouseUp = () => setIsClicked(false);
+    const handleMouseLeave = () => setIsVisible(false);
+    const handleMouseEnter = () => setIsVisible(true);
+    const handleMouseDown  = () => setIsClicked(true);
+    const handleMouseUp    = () => setIsClicked(false);
 
     const handleMouseOver = (e) => {
-      const target = e.target;
-      if (!target) return;
-      
-      const isClickable = target.closest(
-        'a, button, select, input, textarea, [role="button"], .product-card, .faq-item, .modal-thumbnail-btn, .filter-btn, .sort-select, .bento-card, .stat-card, .testimonial-card, .nav-btn, .nav-links a'
+      const clickable = e.target?.closest(
+        'a, button, select, input, textarea, [role="button"], .product-card, .faq-item, .filter-btn, .bento-card, .nav-btn'
       );
-      
-      setIsHovered(!!isClickable);
-
-      // Check if target is highly magnetic
-      const isMagnetic = target.closest(
-        '.nav-btn, .filter-btn, .card-btn, .add-to-cart-btn, #nav-user-menu-btn, .back-to-top-btn'
-      );
-      if (isMagnetic) {
-        activeHoverTarget.current = isMagnetic;
-      } else {
-        activeHoverTarget.current = null;
-      }
+      setIsHovered(!!clickable);
     };
 
     window.addEventListener('mousemove', handleMouseMove);
-    document.addEventListener('mouseleave', handleMouseLeaveWindow);
-    document.addEventListener('mouseenter', handleMouseEnterWindow);
+    document.addEventListener('mouseleave', handleMouseLeave);
+    document.addEventListener('mouseenter', handleMouseEnter);
     window.addEventListener('mousedown', handleMouseDown);
     window.addEventListener('mouseup', handleMouseUp);
     window.addEventListener('mouseover', handleMouseOver);
 
-    // Continuous spin tracker
-    let spinAngle = 0;
     let animFrame;
+    const update = () => {
+      const x = mouseCoords.current.x;
+      const y = mouseCoords.current.y;
 
-    const updateCursor = () => {
-      const targetX = mouseCoords.current.x;
-      const targetY = mouseCoords.current.y;
+      if (dotRef.current)   gsap.set(dotRef.current,   { x, y, overwrite: 'auto' });
+      if (hLineRef.current) gsap.set(hLineRef.current, { x, y, overwrite: 'auto' });
+      if (vLineRef.current) gsap.set(vLineRef.current, { x, y, overwrite: 'auto' });
 
-      // Inner dot follows mouse instantly
-      if (dotRef.current) {
-        gsap.set(dotRef.current, {
-          x: targetX,
-          y: targetY,
-          overwrite: 'auto'
-        });
-      }
-
-      // Outer ring physics (velocity stretch, angle of movement, magnetic snap)
-      if (ringRef.current) {
-        const dx = targetX - prevMouseCoords.current.x;
-        const dy = targetY - prevMouseCoords.current.y;
-        prevMouseCoords.current.x = targetX;
-        prevMouseCoords.current.y = targetY;
-
-        const speed = Math.sqrt(dx * dx + dy * dy);
-        const travelAngle = Math.atan2(dy, dx) * (180 / Math.PI);
-
-        let destX = targetX;
-        let destY = targetY;
-        let scaleX = 1;
-        let scaleY = 1;
-        let rotateAngle = spinAngle;
-
-        spinAngle = (spinAngle + 1.5) % 360;
-
-        if (activeHoverTarget.current) {
-          // Snap outer ring to target
-          const rect = activeHoverTarget.current.getBoundingClientRect();
-          destX = rect.left + rect.width / 2;
-          destY = rect.top + rect.height / 2;
-          
-          // Outer ring envelopes the clickable element slightly
-          scaleX = (rect.width + 12) / 28;
-          scaleY = (rect.height + 12) / 28;
-          rotateAngle = 0;
-        } else {
-          // Jelly speed stretching along travel angle
-          const maxStretch = 0.45;
-          const stretch = Math.min(speed / 90, maxStretch);
-          scaleX = 1 + stretch;
-          scaleY = 1 - stretch;
-          rotateAngle = travelAngle;
-        }
-
-        const lerpFactor = activeHoverTarget.current ? 0.22 : 0.14;
-        ringCoords.current.x += (destX - ringCoords.current.x) * lerpFactor;
-        ringCoords.current.y += (destY - ringCoords.current.y) * lerpFactor;
-
-        gsap.set(ringRef.current, {
-          x: ringCoords.current.x,
-          y: ringCoords.current.y,
-          scaleX: scaleX,
-          scaleY: scaleY,
-          rotation: rotateAngle,
-          borderRadius: activeHoverTarget.current ? '10px' : '50%',
-          overwrite: 'auto'
-        });
-      }
-
-      animFrame = requestAnimationFrame(updateCursor);
+      animFrame = requestAnimationFrame(update);
     };
-    animFrame = requestAnimationFrame(updateCursor);
+    animFrame = requestAnimationFrame(update);
 
     document.body.classList.add('hide-native-cursor');
 
     return () => {
       window.removeEventListener('mousemove', handleMouseMove);
-      document.removeEventListener('mouseleave', handleMouseLeaveWindow);
-      document.removeEventListener('mouseenter', handleMouseEnterWindow);
+      document.removeEventListener('mouseleave', handleMouseLeave);
+      document.removeEventListener('mouseenter', handleMouseEnter);
       window.removeEventListener('mousedown', handleMouseDown);
       window.removeEventListener('mouseup', handleMouseUp);
       window.removeEventListener('mouseover', handleMouseOver);
@@ -143,48 +67,40 @@ export const CustomCursor = () => {
     };
   }, [isVisible]);
 
-  // Adjust cursor styling/scaling on state changes (hover, click)
+  /* Hover / click styling reactions */
   useEffect(() => {
-    if (!isVisible || !ringRef.current || !dotRef.current) return;
+    if (!isVisible) return;
 
-    let ringColor = 'rgba(255, 255, 255, 0.12)';
-    let ringBorderColor = 'var(--primary)';
-    let ringOpacity = 0.75;
-    let dotScale = 1;
-    let dotOpacity = 1;
+    const color     = isHovered ? 'var(--secondary)' : 'var(--primary)';
+    const dotSize   = isClicked ? '10px' : isHovered ? '7px' : '5px';
+    const lineLen   = isHovered ? '14px' : isClicked ? '10px' : '12px';
+    const opacity   = isHovered ? 0.9 : 0.65;
 
-    if (isHovered) {
-      ringOpacity = 0.45;
-      dotScale = 0.5;
-      if (activeHoverTarget.current) {
-        ringColor = 'rgba(99, 102, 241, 0.08)';
-        ringBorderColor = 'rgba(99, 102, 241, 0.45)';
-        ringOpacity = 0.9;
-        dotOpacity = 0; // Hide inner dot when fully snapped for a clean look
-      }
+    if (dotRef.current) {
+      gsap.to(dotRef.current, {
+        width: dotSize, height: dotSize,
+        backgroundColor: color,
+        boxShadow: `0 0 ${isHovered ? 10 : 6}px ${color}`,
+        opacity: 1,
+        duration: 0.18, ease: 'power2.out', overwrite: 'auto'
+      });
     }
-
-    if (isClicked) {
-      ringOpacity = 0.95;
-      dotScale = 1.35;
+    if (hLineRef.current) {
+      gsap.to(hLineRef.current, {
+        width: lineLen,
+        backgroundColor: color,
+        opacity,
+        duration: 0.18, ease: 'power2.out', overwrite: 'auto'
+      });
     }
-
-    gsap.to(ringRef.current, {
-      borderColor: ringBorderColor,
-      backgroundColor: ringColor,
-      opacity: ringOpacity,
-      duration: 0.25,
-      ease: 'power2.out',
-      overwrite: 'auto'
-    });
-
-    gsap.to(dotRef.current, {
-      scale: dotScale,
-      opacity: dotOpacity,
-      duration: 0.2,
-      ease: 'power2.out',
-      overwrite: 'auto'
-    });
+    if (vLineRef.current) {
+      gsap.to(vLineRef.current, {
+        height: lineLen,
+        backgroundColor: color,
+        opacity,
+        duration: 0.18, ease: 'power2.out', overwrite: 'auto'
+      });
+    }
   }, [isHovered, isClicked, isVisible]);
 
   if (window.matchMedia('(pointer: coarse)').matches) return null;
@@ -192,50 +108,63 @@ export const CustomCursor = () => {
   return (
     <>
       <style>{`
-        .hide-native-cursor, .hide-native-cursor * {
+        .hide-native-cursor,
+        .hide-native-cursor * {
           cursor: none !important;
         }
-        .simple-cursor-ring {
-          position: absolute;
-          width: 28px;
-          height: 28px;
-          border-radius: 50%;
-          border: 1.5px solid rgba(255, 255, 255, 0.12);
-          border-top-color: var(--primary);
-          transform: translate(-50%, -50%);
-          box-shadow: 0 0 12px rgba(99, 102, 241, 0.15);
-          will-change: transform, width, height, border-radius;
-          pointer-events: none;
+        /* re-allow text cursor on text inputs */
+        .hide-native-cursor input[type="text"],
+        .hide-native-cursor input[type="password"],
+        .hide-native-cursor input[type="email"],
+        .hide-native-cursor input[type="number"],
+        .hide-native-cursor textarea {
+          cursor: text !important;
         }
-        .simple-cursor-dot {
+        .xhair-dot {
           position: absolute;
-          width: 6px;
-          height: 6px;
+          width: 5px;
+          height: 5px;
           border-radius: 50%;
-          background-color: var(--secondary);
+          background: var(--primary);
           transform: translate(-50%, -50%);
-          box-shadow: 0 0 8px var(--primary-glow);
-          will-change: transform;
           pointer-events: none;
+          will-change: transform;
+          box-shadow: 0 0 6px var(--primary);
+        }
+        .xhair-h {
+          position: absolute;
+          width: 12px;
+          height: 1.5px;
+          background: var(--primary);
+          transform: translate(-50%, -50%);
+          pointer-events: none;
+          will-change: transform;
+          border-radius: 2px;
+        }
+        .xhair-v {
+          position: absolute;
+          width: 1.5px;
+          height: 12px;
+          background: var(--primary);
+          transform: translate(-50%, -50%);
+          pointer-events: none;
+          will-change: transform;
+          border-radius: 2px;
         }
       `}</style>
 
-      <div
-        style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          pointerEvents: 'none',
-          zIndex: 99999,
-          opacity: isVisible ? 1 : 0,
-          transition: 'opacity 0.25s ease'
-        }}
-      >
-        {/* Lagging Ring with speed stretch and magnet snapping */}
-        <div ref={ringRef} className="simple-cursor-ring" />
-        
-        {/* Precise Core Dot */}
-        <div ref={dotRef} className="simple-cursor-dot" />
+      <div style={{
+        position: 'fixed', top: 0, left: 0,
+        pointerEvents: 'none', zIndex: 99999,
+        opacity: isVisible ? 1 : 0,
+        transition: 'opacity 0.2s ease',
+      }}>
+        {/* Horizontal arm */}
+        <div ref={hLineRef} className="xhair-h" />
+        {/* Vertical arm */}
+        <div ref={vLineRef} className="xhair-v" />
+        {/* Centre dot */}
+        <div ref={dotRef}   className="xhair-dot" />
       </div>
     </>
   );

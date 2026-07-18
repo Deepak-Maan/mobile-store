@@ -103,6 +103,49 @@ export const OrderSuccess = () => {
               </button>
             </div>
 
+            {/* Custom Itemized Receipt */}
+            <div style={{
+              background: 'rgba(255, 255, 255, 0.02)',
+              border: '1px solid var(--border-color)',
+              borderRadius: '12px',
+              padding: '1.25rem',
+            }}>
+              <h4 style={{ margin: '0 0 1rem', fontSize: '0.88rem', color: '#fff', fontWeight: '800', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '0.5rem' }}>
+                Itemized Invoice Receipt
+              </h4>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+                {latestOrder.items && latestOrder.items.map((item, idx) => (
+                  <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem' }}>
+                    <span style={{ color: 'var(--text-secondary)' }}>
+                      {item.name} <strong style={{ color: 'var(--primary)' }}>x{item.quantity}</strong>
+                      {item.storage && <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', display: 'block' }}>({item.storage} • {item.color})</span>}
+                    </span>
+                    <span style={{ color: '#fff', fontWeight: '600' }}>{formatINR(item.price * item.quantity)}</span>
+                  </div>
+                ))}
+              </div>
+
+              {/* Delivery Details & Payment method */}
+              <div style={{ 
+                marginTop: '1.25rem', paddingTop: '1rem', borderTop: '1.5px dashed rgba(255,255,255,0.05)', 
+                display: 'grid', gridTemplateColumns: '1.2fr 0.8fr', gap: '1rem', fontSize: '0.78rem' 
+              }}>
+                <div>
+                  <span style={{ color: 'var(--text-muted)', fontWeight: 'bold', textTransform: 'uppercase', fontSize: '0.65rem', display: 'block', marginBottom: '0.2rem' }}>Ship To</span>
+                  <span style={{ color: '#fff', lineHeight: 1.4, display: 'block' }}>
+                    {latestOrder.customerName}<br />
+                    {latestOrder.address}
+                  </span>
+                </div>
+                <div>
+                  <span style={{ color: 'var(--text-muted)', fontWeight: 'bold', textTransform: 'uppercase', fontSize: '0.65rem', display: 'block', marginBottom: '0.2rem' }}>Payment Gateway</span>
+                  <span style={{ color: '#fff', textTransform: 'uppercase', fontWeight: 600, display: 'block' }}>
+                    {latestOrder.paymentMethod === 'upi' ? 'UPI / UTR Confirm' : 'Secure Card Gateway'}
+                  </span>
+                </div>
+              </div>
+            </div>
+
             {/* Quick Details Cards */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.8rem' }}>
               <div style={{ 

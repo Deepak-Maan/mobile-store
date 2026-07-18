@@ -2362,14 +2362,9 @@ footer {
 /* Small Tablets & Large Mobile (max-width: 768px) */
 @media (max-width: 768px) {
 
-  /* Smart Search: compact default, full-width on focus */
+  /* Hide Smart Search on mobile/tablet to prevent crowding */
   .nav-search-wrapper {
-    max-width: 200px;
-    margin: 0 0.75rem;
-  }
-
-  .nav-search-wrapper:focus-within {
-    max-width: 380px;
+    display: none !important;
   }
 
   /* Layout Paddings */
@@ -2518,17 +2513,7 @@ footer {
     padding: 0.8rem 1rem;
   }
 
-  /* Smart Search: shrink default, expand on focus */
-  .nav-search-wrapper {
-    max-width: 140px;
-    margin: 0 0.5rem;
-    transition: max-width 0.35s cubic-bezier(0.16, 1, 0.3, 1);
-  }
 
-  .nav-search-wrapper:focus-within {
-    max-width: 100%;
-    flex: 1;
-  }
 
   .smart-search-shortcut-pill {
     display: none;
@@ -5326,4 +5311,14 @@ body.light-theme .rv-card-price {
   .recently-viewed-subtitle {
     padding-left: 0;
   }
+}
+
+/* ── Biometric Keyframes ── */
+@keyframes biometricSweep {
+  0% { top: 15%; }
+  100% { top: 85%; }
+}
+@keyframes pulse {
+  0% { opacity: 0.3; transform: scale(0.9); }
+  100% { opacity: 1; transform: scale(1.1); }
 }

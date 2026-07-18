@@ -1,48 +1,52 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, lazy, Suspense } from 'react';
 import { useStore } from './context/StoreContext';
 import { Navbar } from './components/Navbar';
 import { Hero } from './components/Hero';
 import { Catalog } from './components/Catalog';
 import { ProductModal } from './components/ProductModal';
 import { CartDrawer } from './components/CartDrawer';
-import { Checkout } from './components/Checkout';
-import { OrderSuccess } from './components/OrderSuccess';
-import { AdminLayout } from './components/admin/AdminLayout';
-import { AdminLogin } from './components/admin/AdminLogin';
 import { AuthModal } from './components/AuthModal';
 import { ToastContainer } from './components/Toast';
 import { Footer } from './components/Footer';
-import { Faq } from './components/Faq';
 import { motion, AnimatePresence } from 'framer-motion';
 import { InteractiveBackground } from './components/InteractiveBackground';
 import { CustomCursor } from './components/CustomCursor';
 import { FeaturesSection } from './components/FeaturesSection';
 import { StatsSection } from './components/StatsSection';
-import { OrderTracker } from './components/OrderTracker';
-import { OrderHistory } from './components/OrderHistory';
-import { UserProfile } from './components/UserProfile';
 
 // Storefront Expansion Components
 import { WishlistDrawer } from './components/WishlistDrawer';
 import { ComparisonConsole } from './components/ComparisonConsole';
 import { SalesTicker } from './components/SalesTicker';
-import { AccessoryBuilder } from './components/AccessoryBuilder';
 import { BackToTop } from './components/BackToTop';
 import { CartFlyProvider } from './components/CartFlyAnimation';
 import { RecentlyViewedBar } from './components/RecentlyViewedBar';
 import { FlashSaleBanner } from './components/FlashSaleBanner';
+import { VisitorTracker } from './components/VisitorTracker';
+
+// Lazy Loaded Components for Lightweight Bundling & Faster Loading
+const Checkout = lazy(() => import('./components/Checkout').then(m => ({ default: m.Checkout })));
+const OrderSuccess = lazy(() => import('./components/OrderSuccess').then(m => ({ default: m.OrderSuccess })));
+const AdminLayout = lazy(() => import('./components/admin/AdminLayout').then(m => ({ default: m.AdminLayout })));
+const AdminLogin = lazy(() => import('./components/admin/AdminLogin').then(m => ({ default: m.AdminLogin })));
+const Faq = lazy(() => import('./components/Faq').then(m => ({ default: m.Faq })));
+const OrderTracker = lazy(() => import('./components/OrderTracker').then(m => ({ default: m.OrderTracker })));
+const OrderHistory = lazy(() => import('./components/OrderHistory').then(m => ({ default: m.OrderHistory })));
+const UserProfile = lazy(() => import('./components/UserProfile').then(m => ({ default: m.UserProfile })));
+const AccessoryBuilder = lazy(() => import('./components/AccessoryBuilder').then(m => ({ default: m.AccessoryBuilder })));
 
 // 3D Parallax & Depth Sections
 import { UniverseHeroReveal } from './components/UniverseHeroReveal';
+import { SEO } from './components/SEO';
+import { InactivityGuard } from './components/InactivityGuard';
 import { SpotlightCarousel } from './components/SpotlightCarousel';
 import { DeviceExploder } from './components/DeviceExploder';
 import { CameraLensZoom } from './components/CameraLensZoom';
 import { ParallaxShowcase } from './components/ParallaxShowcase';
 
 function App() {
-  const { currentView, isAdminLoggedIn, compareIds } = useStore();
+  const { currentView, isAdminLoggedIn, compareIds, isAuthOpen, setIsAuthOpen } = useStore();
   const [isCartOpen, setIsCartOpen] = useState(false);
-  const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [isWishlistOpen, setIsWishlistOpen] = useState(false);
   const [isCompareOpen, setIsCompareOpen] = useState(false);
 
@@ -66,9 +70,14 @@ function App() {
 
   return (
     <CartFlyProvider>
+      <SEO />
+      <InactivityGuard />
       <div className="app-shell" style={{ position: 'relative', minHeight: '100vh' }}>
         {/* Flash Sale Countdown Banner */}
         <FlashSaleBanner />
+
+        {/* Silent Visitor Tracker — background only, renders nothing */}
+        <VisitorTracker />
 
         {/* Global Interactive Elements */}
         <InteractiveBackground />
@@ -86,103 +95,117 @@ function App() {
 
         {/* Main View Router */}
         <main style={{ position: 'relative', overflow: 'hidden' }}>
-          <AnimatePresence mode="wait">
-            {currentView === 'storefront' && (
-              <motion.div
-                key="storefront"
-                initial={{ opacity: 0, y: 15 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -15 }}
-                transition={{ duration: 0.4, ease: 'easeOut' }}
-              >
-                <Hero onExplore={handleExploreClick} />
-                <UniverseHeroReveal />
-                <FeaturesSection />
-                <RecentlyViewedBar />
-                <Catalog />
-                <ParallaxShowcase />
-                <SpotlightCarousel />
-              <DeviceExploder />
-              <AccessoryBuilder />
-              <StatsSection />
-              <CameraLensZoom />
-              <Faq />
-            </motion.div>
-          )}
+          <Suspense fallback={
+            <div style={{
+              display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center',
+              minHeight: '60vh', gap: '1rem', color: 'var(--text-muted)'
+            }}>
+              <div style={{
+                width: '40px', height: '40px', borderRadius: '50%',
+                border: '3px solid rgba(255,255,255,0.05)', borderTopColor: 'var(--primary)',
+                animation: 'spin 1s linear infinite'
+              }} />
+              <span style={{ fontSize: '0.8rem', fontWeight: 600, letterSpacing: '0.05em', textTransform: 'uppercase' }}>Aura Computing...</span>
+            </div>
+          }>
+            <AnimatePresence mode="wait">
+              {currentView === 'storefront' && (
+                <motion.div
+                  key="storefront"
+                  initial={{ opacity: 0, y: 15 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -15 }}
+                  transition={{ duration: 0.4, ease: 'easeOut' }}
+                >
+                  <Hero onExplore={handleExploreClick} />
+                  <UniverseHeroReveal />
+                  <FeaturesSection />
+                  <RecentlyViewedBar />
+                  <Catalog />
+                  <ParallaxShowcase />
+                  <SpotlightCarousel />
+                  <DeviceExploder />
+                  <AccessoryBuilder />
+                  <StatsSection />
+                  <CameraLensZoom />
+                  <Faq />
+                </motion.div>
+              )}
 
-          {currentView === 'tracking' && (
-            <motion.div
-              key="tracking"
-              initial={{ opacity: 0, y: 15 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -15 }}
-              transition={{ duration: 0.4, ease: 'easeOut' }}
-            >
-              <OrderTracker />
-            </motion.div>
-          )}
+              {currentView === 'tracking' && (
+                <motion.div
+                  key="tracking"
+                  initial={{ opacity: 0, y: 15 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -15 }}
+                  transition={{ duration: 0.4, ease: 'easeOut' }}
+                >
+                  <OrderTracker />
+                </motion.div>
+              )}
 
-          {currentView === 'history' && (
-            <motion.div
-              key="history"
-              initial={{ opacity: 0, y: 15 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -15 }}
-              transition={{ duration: 0.4, ease: 'easeOut' }}
-            >
-              <OrderHistory />
-            </motion.div>
-          )}
+              {currentView === 'history' && (
+                <motion.div
+                  key="history"
+                  initial={{ opacity: 0, y: 15 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -15 }}
+                  transition={{ duration: 0.4, ease: 'easeOut' }}
+                >
+                  <OrderHistory />
+                </motion.div>
+              )}
 
-          {currentView === 'profile' && (
-            <motion.div
-              key="profile"
-              initial={{ opacity: 0, y: 15 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -15 }}
-              transition={{ duration: 0.4, ease: 'easeOut' }}
-            >
-              <UserProfile />
-            </motion.div>
-          )}
+              {currentView === 'profile' && (
+                <motion.div
+                  key="profile"
+                  initial={{ opacity: 0, y: 15 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -15 }}
+                  transition={{ duration: 0.4, ease: 'easeOut' }}
+                >
+                  <UserProfile />
+                </motion.div>
+              )}
 
-          {currentView === 'checkout' && (
-            <motion.div
-              key="checkout"
-              initial={{ opacity: 0, y: 15 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -15 }}
-              transition={{ duration: 0.4, ease: 'easeOut' }}
-            >
-              <Checkout onOpenAuth={() => setIsAuthOpen(true)} />
-            </motion.div>
-          )}
+              {currentView === 'checkout' && (
+                <motion.div
+                  key="checkout"
+                  initial={{ opacity: 0, y: 15 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -15 }}
+                  transition={{ duration: 0.4, ease: 'easeOut' }}
+                >
+                  <Checkout onOpenAuth={() => setIsAuthOpen(true)} />
+                </motion.div>
+              )}
 
-          {currentView === 'success' && (
-            <motion.div
-              key="success"
-              initial={{ opacity: 0, y: 15 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -15 }}
-              transition={{ duration: 0.4, ease: 'easeOut' }}
-            >
-              <OrderSuccess />
-            </motion.div>
-          )}
+              {currentView === 'success' && (
+                <motion.div
+                  key="success"
+                  initial={{ opacity: 0, y: 15 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -15 }}
+                  transition={{ duration: 0.4, ease: 'easeOut' }}
+                >
+                  <OrderSuccess />
+                </motion.div>
+              )}
 
-          {currentView === 'admin' && (
-            <motion.div
-              key="admin"
-              initial={{ opacity: 0, y: 15 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -15 }}
-              transition={{ duration: 0.4, ease: 'easeOut' }}
-            >
-              {isAdminLoggedIn ? <AdminLayout /> : <AdminLogin />}
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </main>
+              {currentView === 'admin' && (
+                <motion.div
+                  key="admin"
+                  initial={{ opacity: 0, y: 15 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -15 }}
+                  transition={{ duration: 0.4, ease: 'easeOut' }}
+                >
+                  {isAdminLoggedIn ? <AdminLayout /> : <AdminLogin />}
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </Suspense>
+        </main>
 
       {/* Global Modals & Sliding Drawers */}
       <ProductModal />

@@ -159,6 +159,41 @@ export const AuthModal = ({ isOpen, onClose }) => {
                     style={{ paddingLeft: '2.6rem', width: '100%' }}
                   />
                 </div>
+                {isSignUp && form.password && (() => {
+                  // Password entropy calculator
+                  const pwd = form.password;
+                  let score = 0;
+                  if (pwd.length >= 8) score += 25;
+                  if (/[A-Z]/.test(pwd)) score += 20;
+                  if (/[a-z]/.test(pwd)) score += 20;
+                  if (/[0-9]/.test(pwd)) score += 20;
+                  if (/[^A-Za-z0-9]/.test(pwd)) score += 15;
+                  
+                  let text = 'Weak 🔴';
+                  let color = '#ef4444';
+                  if (score >= 40 && score < 70) {
+                    text = 'Medium 🟠';
+                    color = '#f97316';
+                  } else if (score >= 70 && score < 90) {
+                    text = 'Strong 🟢';
+                    color = '#22c55e';
+                  } else if (score >= 90) {
+                    text = 'Hacker-Proof ⚡';
+                    color = '#06b6d4';
+                  }
+                  
+                  return (
+                    <div style={{ marginTop: '0.45rem', fontSize: '0.78rem' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.25rem', color: 'var(--text-secondary)' }}>
+                        <span>Password Strength:</span>
+                        <span style={{ color, fontWeight: 700 }}>{text}</span>
+                      </div>
+                      <div style={{ height: '5px', background: 'rgba(255,255,255,0.06)', borderRadius: '3px', overflow: 'hidden' }}>
+                        <div style={{ height: '100%', width: `${score}%`, background: color, transition: 'all 0.35s ease' }} />
+                      </div>
+                    </div>
+                  );
+                })()}
               </div>
 
               <button 
